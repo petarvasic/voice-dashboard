@@ -12,10 +12,23 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Fetch clips for this contract month
+    // First get the contract month to find related clips
+    const contractMonth = await base('Contract Months').find(contractMonthId);
+    
+    if (!contractMonth) {
+      return res.status(404).json({ error: 'Contract month not found' });
+    }
+
+    const clipIds = contractMonth.fields['Related Clips'] || [];
+    
+    if (clipIds.length === 0) {
+      return res.status(200).json({ clips: [] });
+    }
+
+    // Fetch clips by their IDs
     const clips = await base('Clips')
       .select({
-        filterByFormula: `FIND("${contractMonthId}", ARRAYJOIN({Contract Months}))`,
+        filterByFormula: `OR(${clipIds.map(id => `RECORD_ID() = "${id}"`).join(',')})`,
         sort: [{ field: 'Publish Date', direction: 'desc' }]
       })
       .all();
@@ -42,6 +55,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Airtable error:', error);
-    res.status(500).json({ error: 'Failed to fetch clips' });
+    res.status(500).json({ error: 'Failed to fetch clips', details: error.message });
   }
 }
