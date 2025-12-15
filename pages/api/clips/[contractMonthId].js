@@ -33,23 +33,49 @@ export default async function handler(req, res) {
       })
       .all();
 
-    const formattedClips = clips.map(record => ({
-      id: record.id,
-      clipId: record.fields['Clip ID'] || '',
-      influencer: record.fields['Influencer Name in Text'] || 'Unknown',
-      platform: record.fields['Social'] || 'TikTok',
-      link: record.fields['Social Media link'] || '',
-      publishDate: record.fields['Publish Date'] || '',
-      views: record.fields['Total Views'] || 0,
-      viewsDay1to6: record.fields['Views (Day 1-6)'] || 0,
-      viewsDay7Plus: record.fields['Views (Day 7- Contract End)'] || 0,
-      likes: record.fields['Likes'] || 0,
-      comments: record.fields['Comments'] || 0,
-      shares: record.fields['Share'] || 0,
-      saves: record.fields['Saves'] || 0,
-      status: record.fields['Status'] || 'Draft',
-      clipStatus: record.fields['Clip Status'] || ''
-    }));
+    // Get all unique influencer IDs from clips
+    const influencerIds = [...new Set(clips.flatMap(c => c.fields['Influencer'] || []))];
+    
+    // Fetch influencer details
+    let influencerMap = {};
+    if (influencerIds.length > 0) {
+      const influencers = await base('Influencers')
+        .select({
+          filterByFormula: `OR(${influencerIds.map(id => `RECORD_ID() = "${id}"`).join(',')})`,
+          fields: ['Influencer Name', 'Influencer_Image']
+        })
+        .all();
+      
+      influencers.forEach(inf => {
+        const image = inf.fields['Influencer_Image'];
+        influencerMap[inf.id] = {
+          name: inf.fields['Influencer Name'] || 'Unknown',
+          image: image && image[0] ? image[0].url : null
+        };
+      });
+    }
+
+    const formattedClips = clips.map(record => {
+      const influencerId = record.fields['Influencer'] ? record.fields['Influencer'][0] : null;
+      const influencer = influencerId ? influencerMap[influencerId] : { name: 'Unknown', image: null };
+      
+      return {
+        id: record.id,
+        clipId: record.fields['Clip ID'] || '',
+        influencer: influencer.name,
+        influencerImage: influencer.image,
+        platform: record.fields['Social'] || 'TikTok',
+        link: record.fields['Social Media link'] || '',
+        publishDate: record.fields['Publish Date'] || '',
+        views: record.fields['Total Views'] || 0,
+        likes: record.fields['Likes'] || 0,
+        comments: record.fields['Comments'] || 0,
+        shares: record.fields['Share'] || 0,
+        saves: record.fields['Saves'] || 0,
+        status: record.fields['Status'] || 'Draft',
+        clipStatus: record.fields['Clip Status'] || ''
+      };
+    });
 
     res.status(200).json({ clips: formattedClips });
 
