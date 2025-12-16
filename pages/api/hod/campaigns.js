@@ -69,7 +69,6 @@ export default async function handler(req, res) {
     // Fetch all contract months
     const contractMonths = await base('Contract Months')
       .select({
-        view: 'Grid view',
         fields: [
           'Month',
           'Client',
@@ -92,7 +91,6 @@ export default async function handler(req, res) {
     // Fetch all clients for names
     const clients = await base('Clients')
       .select({
-        view: 'Grid view',
         fields: ['Name', 'Logo']
       })
       .all();
@@ -238,4 +236,4 @@ export default async function handler(req, res) {
     console.error('HOD API Error:', error);
     res.status(500).json({ error: 'Failed to fetch campaigns', details: error.message });
   }
-                          }
+}
