@@ -22,6 +22,85 @@ const formatPercent = (num) => {
   return num.toFixed(2) + '%';
 };
 
+// Live Indicator with pulse animation
+const LiveIndicator = () => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+    <style>{`
+      @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(0.85); }
+      }
+      @keyframes glow {
+        0%, 100% { box-shadow: 0 0 4px #22c55e, 0 0 8px #22c55e; }
+        50% { box-shadow: 0 0 8px #22c55e, 0 0 20px #22c55e, 0 0 30px rgba(34, 197, 94, 0.4); }
+      }
+    `}</style>
+    <div style={{
+      width: '8px', height: '8px', borderRadius: '50%',
+      background: '#22c55e',
+      animation: 'pulse 2s ease-in-out infinite, glow 2s ease-in-out infinite'
+    }} />
+    <span style={{ fontSize: '11px', fontWeight: '600', color: '#22c55e', textTransform: 'uppercase', letterSpacing: '1px' }}>
+      Live Dashboard
+    </span>
+  </div>
+);
+
+// Animated gradient orb for parallax effect
+const GradientOrb = ({ style }) => (
+  <div style={{
+    position: 'absolute',
+    borderRadius: '50%',
+    filter: 'blur(80px)',
+    opacity: 0.35,
+    pointerEvents: 'none',
+    ...style
+  }} />
+);
+
+// Progress Ring (Stripe style)
+const ProgressRing = ({ progress, size = 140, strokeWidth = 10 }) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (Math.min(progress, 100) / 100) * circumference;
+  const isComplete = progress >= 100;
+
+  return (
+    <div style={{ position: 'relative', width: size, height: size }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+        <defs>
+          <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor={isComplete ? '#22c55e' : '#818cf8'} />
+            <stop offset="100%" stopColor={isComplete ? '#4ade80' : '#a78bfa'} />
+          </linearGradient>
+        </defs>
+        <circle
+          cx={size / 2} cy={size / 2} r={radius}
+          fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={strokeWidth}
+        />
+        <circle
+          cx={size / 2} cy={size / 2} r={radius}
+          fill="none" stroke="url(#progressGradient)" strokeWidth={strokeWidth}
+          strokeDasharray={circumference} strokeDashoffset={offset}
+          strokeLinecap="round"
+          style={{ transition: 'stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
+        />
+      </svg>
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+        textAlign: 'center'
+      }}>
+        <p style={{ fontSize: '32px', fontWeight: '700', color: '#fff', margin: 0 }}>
+          {Math.round(progress)}%
+        </p>
+        <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', margin: '2px 0 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          {isComplete ? 'Završeno' : 'Progress'}
+        </p>
+      </div>
+    </div>
+  );
+};
+
 // VOICE Logo
 const VoiceLogo = () => (
   <svg width="100" height="32" viewBox="0 0 100 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -643,6 +722,13 @@ export default function ClientDashboard() {
   const [boostModalOpen, setBoostModalOpen] = useState(false);
   const [metricModal, setMetricModal] = useState({ isOpen: false, title: '', data: [], color: '', description: '' });
   const [clipsModalOpen, setClipsModalOpen] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     if (!clientId) return;
@@ -851,31 +937,50 @@ export default function ClientDashboard() {
                 <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: '2px 0 0' }}>Campaign Dashboard</p>
               </div>
             </div>
-            <button onClick={() => setBoostModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'linear-gradient(135deg, #818cf8 0%, #a78bfa 100%)', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
-              ⚡ Boost kampanju
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              <LiveIndicator />
+              <button onClick={() => setBoostModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'linear-gradient(135deg, #818cf8 0%, #a78bfa 100%)', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
+              ⚡ Boost
             </button>
+            </div>
           </div>
         </header>
 
         <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '28px' }}>
           
-          {/* Compact Hero - Cumulative Progress */}
-          {months.length > 1 && (
-            <section style={{ background: 'linear-gradient(135deg, rgba(129, 140, 248, 0.08) 0%, rgba(167, 139, 250, 0.04) 100%)', border: '1px solid rgba(129, 140, 248, 0.12)', borderRadius: '20px', padding: '24px 28px', marginBottom: '28px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
+          {/* Hero Section with Parallax - Stripe Style */}
+          {months.length > 0 && (
+            <section style={{
+              position: 'relative', overflow: 'hidden',
+              background: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: '24px', padding: '40px 48px', marginBottom: '32px'
+            }}>
+              {/* Parallax gradient orbs */}
+              <GradientOrb style={{
+                width: '500px', height: '500px', top: '-250px', right: '-150px',
+                background: 'linear-gradient(135deg, #818cf8, #a78bfa)',
+                transform: `translateY(${scrollY * 0.15}px)`
+              }} />
+              <GradientOrb style={{
+                width: '400px', height: '400px', bottom: '-200px', left: '-100px',
+                background: 'linear-gradient(135deg, #f472b6, #818cf8)',
+                transform: `translateY(${scrollY * -0.1}px)`
+              }} />
+              
+              <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '32px' }}>
                 <div>
-                  <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>🎯 Celokupna kampanja ({months.length} meseci)</p>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                    <span style={{ fontSize: '36px', fontWeight: '800' }}>{formatNumber(cumulative.totalViews)}</span>
-                    <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)' }}>/ {formatNumber(cumulative.totalGoal)}</span>
+                  <p style={{ fontSize: '12px', fontWeight: '600', color: 'rgba(255,255,255,0.4)', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    🎯 Celokupna kampanja • {months.length} {months.length === 1 ? 'mesec' : 'meseci'}
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '56px', fontWeight: '800', letterSpacing: '-2px' }}>{formatNumber(cumulative.totalViews)}</span>
+                    <span style={{ fontSize: '20px', color: 'rgba(255,255,255,0.4)' }}>/ {formatNumber(cumulative.totalGoal)}</span>
                   </div>
+                  <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>ukupnih pregleda</p>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontSize: '32px', fontWeight: '800', margin: 0, color: cumulative.percentDelivered >= 1 ? '#4ade80' : '#818cf8' }}>{(cumulative.percentDelivered * 100).toFixed(0)}%</p>
-                </div>
-              </div>
-              <div style={{ height: '10px', background: 'rgba(255,255,255,0.06)', borderRadius: '100px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${Math.min(cumulative.percentDelivered * 100, 100)}%`, background: cumulative.percentDelivered >= 1 ? 'linear-gradient(90deg, #22c55e 0%, #4ade80 100%)' : 'linear-gradient(90deg, #818cf8 0%, #a78bfa 100%)', borderRadius: '100px' }} />
+                
+                <ProgressRing progress={cumulative.percentDelivered * 100} size={160} strokeWidth={12} />
               </div>
             </section>
           )}
