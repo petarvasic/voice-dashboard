@@ -113,7 +113,7 @@ const ProgressBar = ({ percent, expected, size = 'normal', showExpected = true }
 };
 
 // Stat Card
-const StatCard = ({ icon, label, value, subValue, color, onClick }) => {
+const StatCard = ({ icon, label, value, subValue, color, onClick, isMain = false }) => {
   const [isHovered, setIsHovered] = useState(false);
   
   return (
@@ -122,22 +122,23 @@ const StatCard = ({ icon, label, value, subValue, color, onClick }) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{
-        background: isHovered ? `rgba(${color}, 0.15)` : 'rgba(255,255,255,0.03)',
-        border: `1px solid ${isHovered ? `rgba(${color}, 0.4)` : 'rgba(255,255,255,0.06)'}`,
+        background: isHovered ? `rgba(${color}, 0.2)` : isMain ? `rgba(${color}, 0.1)` : 'rgba(255,255,255,0.03)',
+        border: `1px solid ${isHovered || isMain ? `rgba(${color}, 0.4)` : 'rgba(255,255,255,0.06)'}`,
         borderRadius: '16px',
-        padding: '20px',
+        padding: isMain ? '24px' : '20px',
         cursor: onClick ? 'pointer' : 'default',
         transition: 'all 0.2s ease',
-        transform: isHovered ? 'translateY(-2px)' : 'none'
+        transform: isHovered ? 'translateY(-2px)' : 'none',
+        boxShadow: isHovered ? `0 8px 24px rgba(${color}, 0.15)` : 'none'
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-        <span style={{ fontSize: '20px' }}>{icon}</span>
+        <span style={{ fontSize: isMain ? '24px' : '20px' }}>{icon}</span>
         <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</span>
       </div>
-      <p style={{ fontSize: '32px', fontWeight: '800', margin: 0, color: '#fff' }}>{value}</p>
+      <p style={{ fontSize: isMain ? '40px' : '32px', fontWeight: '800', margin: 0, color: '#fff' }}>{value}</p>
       {subValue && (
-        <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: '4px 0 0' }}>{subValue}</p>
+        <p style={{ fontSize: '12px', color: `rgba(${color}, 0.9)`, margin: '4px 0 0', fontWeight: '500' }}>{subValue}</p>
       )}
     </div>
   );
@@ -580,54 +581,82 @@ export default function HODDashboard() {
 
         <main style={{ maxWidth: '1600px', margin: '0 auto', padding: '28px' }}>
           
-          {/* Stats Cards */}
-          <section style={{
+          {/* Main Status Cards - 4 important buttons */}
+          <style>{`
+            @media (max-width: 900px) {
+              .status-grid { grid-template-columns: repeat(2, 1fr) !important; }
+            }
+            @media (max-width: 500px) {
+              .status-grid { grid-template-columns: 1fr !important; }
+            }
+          `}</style>
+          <section className="status-grid" style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gridTemplateColumns: 'repeat(4, 1fr)',
             gap: '16px',
-            marginBottom: '32px'
+            marginBottom: '24px'
           }}>
-            <StatCard
-              icon="🎯"
-              label="Aktivne kampanje"
-              value={stats.total || 0}
-              color="129, 140, 248"
-            />
             <StatCard
               icon="🚨"
               label="Kritično"
               value={stats.critical || 0}
-              subValue={stats.critical > 0 ? 'Potrebna akcija!' : ''}
+              subValue={stats.critical > 0 ? 'Potrebna akcija!' : 'Sve OK'}
               color="239, 68, 68"
               onClick={() => { setActiveTab('critical'); setStatusFilter('KRITIČNO'); }}
+              isMain={true}
             />
             <StatCard
               icon="⚠️"
               label="Kasni"
               value={stats.behind || 0}
+              subValue="Gap > 20%"
               color="249, 115, 22"
               onClick={() => { setActiveTab('all'); setStatusFilter('KASNI'); }}
+              isMain={true}
             />
             <StatCard
               icon="👀"
               label="Prati"
               value={stats.watch || 0}
+              subValue="Gap 10-20%"
               color="234, 179, 8"
               onClick={() => { setActiveTab('all'); setStatusFilter('PRATI'); }}
+              isMain={true}
             />
             <StatCard
               icon="✅"
               label="OK / Done"
               value={(stats.ok || 0) + (stats.done || 0)}
+              subValue="Na putu"
               color="34, 197, 94"
               onClick={() => { setActiveTab('all'); setStatusFilter('OK'); }}
+              isMain={true}
             />
-            <StatCard
-              icon="📊"
-              label="Prosečan Delivery"
-              value={formatPercent(stats.avgDelivery)}
-              color="167, 139, 250"
-            />
+          </section>
+
+          {/* Secondary Info Row */}
+          <section style={{
+            display: 'flex',
+            gap: '24px',
+            marginBottom: '24px',
+            padding: '16px 20px',
+            background: 'rgba(255,255,255,0.02)',
+            borderRadius: '12px',
+            border: '1px solid rgba(255,255,255,0.06)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '16px' }}>🎯</span>
+              <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>Aktivne kampanje:</span>
+              <span style={{ fontSize: '15px', fontWeight: '700', color: '#fff' }}>{stats.total || 0}</span>
+            </div>
+            <div style={{ height: '20px', width: '1px', background: 'rgba(255,255,255,0.1)' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '16px' }}>📊</span>
+              <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>Prosečan delivery:</span>
+              <span style={{ fontSize: '15px', fontWeight: '700', color: stats.avgDelivery >= 80 ? '#4ade80' : stats.avgDelivery >= 50 ? '#fbbf24' : '#f87171' }}>
+                {formatPercent(stats.avgDelivery)}
+              </span>
+            </div>
           </section>
 
           {/* Tabs */}
@@ -702,7 +731,7 @@ export default function HODDashboard() {
                     <CriticalAlertCard
                       key={campaign.id}
                       campaign={campaign}
-                      onClick={() => router.push(`/client/${campaign.clientId}`)}
+                      onClick={() => campaign.clientId && router.push(`/client/${campaign.clientId}`)}
                     />
                   ))}
                 </div>
@@ -810,7 +839,7 @@ export default function HODDashboard() {
                   <CampaignRow
                     key={campaign.id}
                     campaign={campaign}
-                    onClick={() => router.push(`/client/${campaign.clientId}`)}
+                    onClick={() => campaign.clientId && router.push(`/client/${campaign.clientId}`)}
                   />
                 ))}
               </div>
@@ -909,7 +938,7 @@ export default function HODDashboard() {
                     <CampaignRow
                       key={campaign.id}
                       campaign={campaign}
-                      onClick={() => router.push(`/client/${campaign.clientId}`)}
+                      onClick={() => campaign.clientId && router.push(`/client/${campaign.clientId}`)}
                     />
                   ))
                 )}
