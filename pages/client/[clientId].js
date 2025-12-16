@@ -73,6 +73,116 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+// Clips List Modal
+const ClipsModal = ({ isOpen, onClose, clips, monthName }) => {
+  if (!isOpen) return null;
+  
+  const sortedClips = [...clips].sort((a, b) => (b.views || 0) - (a.views || 0));
+  const totalViews = clips.reduce((sum, c) => sum + (c.views || 0), 0);
+  const avgViews = clips.length > 0 ? Math.round(totalViews / clips.length) : 0;
+
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      background: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(12px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 1000, padding: '20px'
+    }} onClick={onClose}>
+      <div style={{
+        background: 'linear-gradient(180deg, #1e1e38 0%, #18182d 100%)',
+        borderRadius: '24px', padding: '28px', maxWidth: '520px', width: '100%',
+        border: '1px solid rgba(129, 140, 248, 0.2)', boxShadow: '0 30px 60px rgba(0,0,0,0.5)',
+        position: 'relative', maxHeight: '80vh', display: 'flex', flexDirection: 'column'
+      }} onClick={e => e.stopPropagation()}>
+        
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <span style={{ fontSize: '28px' }}>📹</span>
+            <div>
+              <h2 style={{ fontSize: '18px', fontWeight: '700', margin: 0, color: '#fff' }}>Svi klipovi</h2>
+              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: '2px 0 0' }}>{monthName}</p>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
+            <div style={{ background: 'rgba(129, 140, 248, 0.1)', padding: '12px 16px', borderRadius: '10px', flex: 1 }}>
+              <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', margin: '0 0 4px', textTransform: 'uppercase' }}>Ukupno klipova</p>
+              <p style={{ fontSize: '20px', fontWeight: '700', margin: 0, color: '#818cf8' }}>{clips.length}</p>
+            </div>
+            <div style={{ background: 'rgba(244, 114, 182, 0.1)', padding: '12px 16px', borderRadius: '10px', flex: 1 }}>
+              <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', margin: '0 0 4px', textTransform: 'uppercase' }}>Prosek po klipu</p>
+              <p style={{ fontSize: '20px', fontWeight: '700', margin: 0, color: '#f472b6' }}>{formatNumber(avgViews)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', marginRight: '-8px', paddingRight: '8px' }}>
+          {sortedClips.length === 0 ? (
+            <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '30px' }}>Nema klipova</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {sortedClips.map((clip, i) => (
+                <div key={clip.id || i} style={{
+                  display: 'flex', alignItems: 'center', gap: '12px',
+                  padding: '12px 14px', background: i === 0 ? 'rgba(251, 191, 36, 0.1)' : 'rgba(255,255,255,0.03)',
+                  borderRadius: '12px', border: i === 0 ? '1px solid rgba(251, 191, 36, 0.2)' : '1px solid rgba(255,255,255,0.04)'
+                }}>
+                  <span style={{ fontSize: '11px', fontWeight: '700', color: i === 0 ? '#fbbf24' : 'rgba(255,255,255,0.3)', width: '22px' }}>#{i + 1}</span>
+                  
+                  <div style={{
+                    width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
+                    background: clip.influencerImage ? 'transparent' : `linear-gradient(135deg, hsl(${(i * 47) % 360}, 50%, 50%), hsl(${(i * 47 + 30) % 360}, 50%, 40%))`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    {clip.influencerImage ? (
+                      <img src={clip.influencerImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <span style={{ color: '#fff', fontWeight: '600', fontSize: '13px' }}>{clip.influencer?.charAt(0) || '?'}</span>
+                    )}
+                  </div>
+                  
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: '13px', fontWeight: '500', margin: 0, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{clip.influencer}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                      <PlatformIcon platform={clip.platform} size={11} />
+                      <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>{formatDate(clip.publishDate)}</span>
+                    </div>
+                  </div>
+                  
+                  <div style={{ textAlign: 'right', marginRight: '8px' }}>
+                    <p style={{ fontSize: '14px', fontWeight: '700', margin: 0, color: i === 0 ? '#fbbf24' : '#fff' }}>{formatNumber(clip.views)}</p>
+                  </div>
+                  
+                  {clip.link ? (
+                    <a href={clip.link} target="_blank" rel="noopener noreferrer" style={{
+                      padding: '6px 12px', background: 'rgba(129, 140, 248, 0.15)', borderRadius: '8px',
+                      color: '#818cf8', textDecoration: 'none', fontSize: '11px', fontWeight: '600',
+                      display: 'flex', alignItems: 'center', gap: '4px'
+                    }}>
+                      Pogledaj ↗
+                    </a>
+                  ) : (
+                    <span style={{ width: '75px' }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <button onClick={onClose} style={{
+          position: 'absolute', top: '16px', right: '16px',
+          background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%',
+          width: '32px', height: '32px', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.5)'
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // Metric Detail Modal with Heat Map
 const MetricModal = ({ isOpen, onClose, title, data, color, description }) => {
   if (!isOpen || !data || data.length === 0) return null;
@@ -532,6 +642,7 @@ export default function ClientDashboard() {
   const [clipsLoading, setClipsLoading] = useState(false);
   const [boostModalOpen, setBoostModalOpen] = useState(false);
   const [metricModal, setMetricModal] = useState({ isOpen: false, title: '', data: [], color: '', description: '' });
+  const [clipsModalOpen, setClipsModalOpen] = useState(false);
 
   useEffect(() => {
     if (!clientId) return;
@@ -784,7 +895,7 @@ export default function ClientDashboard() {
 
           {/* Monthly Metric Cards - Clickable with Modals */}
           <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', marginBottom: '28px' }}>
-            <MetricCard icon="📹" label="Klipovi" value={analytics.monthClips} colorRgb="129, 140, 248" description="Broj objavljenih klipova" onClick={() => {}} />
+            <MetricCard icon="📹" label="Klipovi" value={analytics.monthClips} colorRgb="129, 140, 248" description="Klikni za listu svih klipova sa linkovima" onClick={() => setClipsModalOpen(true)} />
             <MetricCard icon="❤️" label="Lajkovi" value={formatNumber(analytics.monthLikes)} colorRgb="244, 114, 182" description="Klikni za breakdown po influenceru" onClick={() => openMetricModal('Lajkovi po influenceru', analytics.likesByInfluencer, '244, 114, 182', 'Ko je dobio najviše lajkova')} />
             <MetricCard icon="💬" label="Komentari" value={formatNumber(analytics.monthComments)} colorRgb="251, 191, 36" description="Klikni za breakdown po mesecu" onClick={() => openMetricModal('Komentari po mesecu', analytics.commentsByMonth, '251, 191, 36', 'Komentari kroz vreme')} />
             <MetricCard icon="🔄" label="Deljenja" value={formatNumber(analytics.monthShares)} colorRgb="52, 211, 153" description="Klikni za breakdown po mesecu" onClick={() => openMetricModal('Deljenja po mesecu', analytics.sharesByMonth, '52, 211, 153', 'Koliko se sadržaj deli')} />
@@ -1017,6 +1128,7 @@ export default function ClientDashboard() {
 
         <BoostModal isOpen={boostModalOpen} onClose={() => setBoostModalOpen(false)} clientName={clientData?.client?.name} />
         <MetricModal isOpen={metricModal.isOpen} onClose={() => setMetricModal({ ...metricModal, isOpen: false })} title={metricModal.title} data={metricModal.data} color={metricModal.color} description={metricModal.description} />
+        <ClipsModal isOpen={clipsModalOpen} onClose={() => setClipsModalOpen(false)} clips={clips} monthName={selectedMonth?.month} />
       </div>
     </>
   );
