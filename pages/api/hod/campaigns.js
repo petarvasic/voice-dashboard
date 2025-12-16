@@ -150,9 +150,12 @@ export default async function handler(req, res) {
       };
     });
 
-    // Filter only active campaigns
+    // Filter only active campaigns AND with valid client
     const activeCampaigns = campaigns.filter(c => {
-      if (c.contractStatus === 'Active') return true;
+      // Skip campaigns without proper client
+      if (!c.clientId || c.client.name === 'Unknown') return false;
+      
+      if (c.contractStatus === 'Active' || c.contractStatus === 'Active ') return true;
       if (c.endDate) {
         const end = parseDate(c.endDate);
         if (end) {
