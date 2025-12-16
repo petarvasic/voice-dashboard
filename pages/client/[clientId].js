@@ -323,65 +323,119 @@ const TopClipsChart = ({ clips, maxValue }) => {
   );
 };
 
-// Clickable Highlight Card with tooltip
-const HighlightCard = ({ icon, title, name, value, subtext, image, colorRgb, link, tooltip }) => {
-  const [isHovered, setIsHovered] = useState(false);
+// Highlight Info Modal
+const HighlightModal = ({ isOpen, onClose, icon, title, name, value, subtext, description, extraInfo, link, colorRgb }) => {
+  if (!isOpen) return null;
   
-  const content = (
-    <div 
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{
-        background: `linear-gradient(135deg, rgba(${colorRgb}, 0.12) 0%, rgba(${colorRgb}, 0.05) 100%)`,
-        border: `1px solid rgba(${colorRgb}, ${isHovered ? 0.4 : 0.2})`,
-        borderRadius: '16px', padding: '18px', flex: 1, minWidth: '180px',
-        cursor: link ? 'pointer' : 'default',
-        transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
-        transition: 'all 0.2s ease',
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      background: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(12px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 1000, padding: '20px'
+    }} onClick={onClose}>
+      <div style={{
+        background: `linear-gradient(180deg, rgba(30, 30, 56, 1) 0%, rgba(24, 24, 45, 1) 100%)`,
+        borderRadius: '24px', padding: '32px', maxWidth: '400px', width: '100%',
+        border: `1px solid rgba(${colorRgb}, 0.3)`, boxShadow: `0 30px 60px rgba(0,0,0,0.5), 0 0 40px rgba(${colorRgb}, 0.1)`,
         position: 'relative'
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
-        <span style={{ fontSize: '14px' }}>{icon}</span>
-        <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</span>
-        {link && <span style={{ fontSize: '10px', color: `rgba(${colorRgb}, 0.8)`, marginLeft: 'auto' }}>↗</span>}
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        {image !== undefined && (
-          <div style={{
-            width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
-            background: image ? 'transparent' : `linear-gradient(135deg, rgba(${colorRgb}, 0.6) 0%, rgba(${colorRgb}, 0.3) 100%)`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid rgba(${colorRgb}, 0.3)`
-          }}>
-            {image ? <img src={image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : <span style={{ color: '#fff', fontWeight: '700', fontSize: '15px' }}>{name?.charAt(0) || '?'}</span>}
-          </div>
-        )}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: '12px', fontWeight: '600', margin: '0 0 2px', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</p>
-          <p style={{ fontSize: '15px', fontWeight: '700', margin: 0, color: `rgb(${colorRgb})` }}>
-            {value} {subtext && <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: '400' }}>{subtext}</span>}
+      }} onClick={e => e.stopPropagation()}>
+        
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <span style={{ fontSize: '48px', display: 'block', marginBottom: '12px' }}>{icon}</span>
+          <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 8px' }}>{title}</p>
+          <h2 style={{ fontSize: '22px', fontWeight: '700', margin: '0 0 4px', color: '#fff' }}>{name}</h2>
+          <p style={{ fontSize: '28px', fontWeight: '800', margin: 0, color: `rgb(${colorRgb})` }}>
+            {value} <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', fontWeight: '400' }}>{subtext}</span>
           </p>
+        </div>
+        
+        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
+          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', margin: 0, lineHeight: '1.6' }}>{description}</p>
+          {extraInfo && (
+            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '12px 0 0', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>{extraInfo}</p>
+          )}
+        </div>
+        
+        {link && (
+          <a href={link} target="_blank" rel="noopener noreferrer" style={{
+            display: 'block', textAlign: 'center', padding: '12px 20px',
+            background: `linear-gradient(135deg, rgba(${colorRgb}, 0.3) 0%, rgba(${colorRgb}, 0.15) 100%)`,
+            border: `1px solid rgba(${colorRgb}, 0.4)`, borderRadius: '12px',
+            color: '#fff', textDecoration: 'none', fontSize: '13px', fontWeight: '600'
+          }}>
+            Pogledaj klip ↗
+          </a>
+        )}
+        
+        <button onClick={onClose} style={{
+          position: 'absolute', top: '16px', right: '16px',
+          background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%',
+          width: '32px', height: '32px', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.5)'
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Clickable Highlight Card with modal
+const HighlightCard = ({ icon, title, name, value, subtext, image, colorRgb, link, description, extraInfo }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  
+  return (
+    <>
+      <div 
+        onClick={() => setModalOpen(true)}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        style={{
+          background: `linear-gradient(135deg, rgba(${colorRgb}, 0.12) 0%, rgba(${colorRgb}, 0.05) 100%)`,
+          border: `1px solid rgba(${colorRgb}, ${isHovered ? 0.4 : 0.2})`,
+          borderRadius: '16px', padding: '18px', flex: 1, minWidth: '160px',
+          cursor: 'pointer',
+          transform: isHovered ? 'translateY(-3px)' : 'translateY(0)',
+          boxShadow: isHovered ? `0 12px 24px rgba(${colorRgb}, 0.15)` : 'none',
+          transition: 'all 0.2s ease',
+          position: 'relative'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
+          <span style={{ fontSize: '14px' }}>{icon}</span>
+          <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</span>
+          <span style={{ fontSize: '10px', color: `rgba(${colorRgb}, 0.8)`, marginLeft: 'auto' }}>ⓘ</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {image !== undefined && (
+            <div style={{
+              width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
+              background: image ? 'transparent' : `linear-gradient(135deg, rgba(${colorRgb}, 0.6) 0%, rgba(${colorRgb}, 0.3) 100%)`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid rgba(${colorRgb}, 0.3)`
+            }}>
+              {image ? <img src={image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <span style={{ color: '#fff', fontWeight: '700', fontSize: '15px' }}>{name?.charAt(0) || '?'}</span>}
+            </div>
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: '12px', fontWeight: '600', margin: '0 0 2px', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</p>
+            <p style={{ fontSize: '15px', fontWeight: '700', margin: 0, color: `rgb(${colorRgb})` }}>
+              {value} {subtext && <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: '400' }}>{subtext}</span>}
+            </p>
+          </div>
         </div>
       </div>
       
-      {isHovered && tooltip && (
-        <div style={{
-          position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(0,0,0,0.95)', padding: '8px 12px', borderRadius: '8px',
-          fontSize: '11px', color: 'rgba(255,255,255,0.9)', whiteSpace: 'nowrap',
-          marginBottom: '8px', zIndex: 10
-        }}>
-          {tooltip}
-        </div>
-      )}
-    </div>
+      <HighlightModal 
+        isOpen={modalOpen} 
+        onClose={() => setModalOpen(false)}
+        icon={icon} title={title} name={name} value={value} subtext={subtext}
+        description={description} extraInfo={extraInfo} link={link} colorRgb={colorRgb}
+      />
+    </>
   );
-  
-  if (link) {
-    return <a href={link} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', flex: 1, minWidth: '180px' }}>{content}</a>;
-  }
-  return content;
 };
 
 // Stat Card for analytics
@@ -811,52 +865,83 @@ export default function ClientDashboard() {
             </div>
           </section>
 
-          {/* Highlights - Clickable */}
-          <section style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '28px' }}>
+          {/* Highlights - Clickable with Modals */}
+          <section className="highlights-grid" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '28px' }}>
+            <style>{`
+              @media (max-width: 768px) {
+                .highlights-grid {
+                  display: grid !important;
+                  grid-template-columns: repeat(2, 1fr) !important;
+                }
+              }
+              @media (max-width: 500px) {
+                .highlights-grid {
+                  grid-template-columns: 1fr !important;
+                }
+              }
+            `}</style>
             {analytics.topClip && (
               <HighlightCard icon="🔥" title="Top Klip" name={analytics.topClip.influencer}
                 value={formatNumber(analytics.topClip.views)} subtext="pregleda"
                 image={analytics.topClip.influencerImage} colorRgb="244, 114, 182"
-                link={analytics.topClip.link} tooltip="Klip sa najviše pregleda ovog meseca"
+                link={analytics.topClip.link}
+                description="Ovaj klip ima najviše pregleda u izabranom mesecu. To znači da je sadržaj odlično rezonovao sa publikom."
+                extraInfo={`Platform: ${analytics.topClip.platform} • Objavljeno: ${formatDate(analytics.topClip.publishDate)}`}
               />
             )}
             {analytics.influencerList[0] && (
               <HighlightCard icon="⭐" title="MVP Influencer" name={analytics.influencerList[0].name}
                 value={formatNumber(analytics.influencerList[0].views)} subtext={`(${analytics.influencerList[0].clips} klipova)`}
                 image={analytics.influencerList[0].image} colorRgb="129, 140, 248"
-                tooltip="Influencer sa najviše ukupnih pregleda"
+                description="Influencer koji je doneo najviše vrednosti u ovom mesecu. MVP (Most Valuable Player) se računa po ukupnom broju pregleda svih klipova."
+                extraInfo={`Prosečno ${formatNumber(Math.round(analytics.influencerList[0].views / analytics.influencerList[0].clips))} pregleda po klipu`}
               />
             )}
             {analytics.mostViralClip && (
               <HighlightCard icon="🚀" title="Most Viral" name={analytics.mostViralClip.influencer}
                 value={analytics.mostViralClip.viralScore.toFixed(1)} subtext="viral score"
                 image={analytics.mostViralClip.influencerImage} colorRgb="52, 211, 153"
-                link={analytics.mostViralClip.link} tooltip="Najviši odnos deljenja prema pregledima"
+                link={analytics.mostViralClip.link}
+                description="Viral Score meri koliko se sadržaj deli u odnosu na preglede. Viši score znači da ljudi aktivno dele ovaj klip sa drugima."
+                extraInfo={`Formula: (deljenja ÷ pregledi) × 1000 • ${formatNumber(analytics.mostViralClip.shares || 0)} deljenja`}
               />
             )}
             {analytics.mostSavedClip && analytics.mostSavedClip.saves > 0 && (
               <HighlightCard icon="💾" title="Most Saved" name={analytics.mostSavedClip.influencer}
                 value={formatNumber(analytics.mostSavedClip.saves)} subtext="sačuvano"
                 image={analytics.mostSavedClip.influencerImage} colorRgb="96, 165, 250"
-                link={analytics.mostSavedClip.link} tooltip="Najviše puta sačuvan klip"
+                link={analytics.mostSavedClip.link}
+                description="Klip koji su korisnici najviše puta sačuvali. Sačuvan sadržaj ukazuje na visoku vrednost - ljudi žele da se vrate i ponovo pogledaju."
+                extraInfo={`${formatNumber(analytics.mostSavedClip.views)} pregleda ukupno`}
               />
             )}
             {analytics.bestMonth && (
               <HighlightCard icon="📈" title="Best Month" name={analytics.bestMonth.month}
                 value={formatNumber(analytics.bestMonth.totalViews)} subtext="pregleda"
-                colorRgb="167, 139, 250" tooltip="Mesec sa najviše pregleda u kampanji"
+                colorRgb="167, 139, 250"
+                description="Mesec sa najviše pregleda u celoj kampanji. Ovo pokazuje kada je kampanja imala najveći doseg."
+                extraInfo={`Cilj: ${formatNumber(analytics.bestMonth.campaignGoal)} • Isporučeno: ${(analytics.bestMonth.percentDelivered * 100).toFixed(0)}%`}
               />
             )}
             {analytics.fastestGrowingMonth && (
               <HighlightCard icon="📊" title="Fastest Growth" name={analytics.fastestGrowingMonth.month.month}
                 value={`+${analytics.fastestGrowingMonth.growth.toFixed(0)}%`} subtext="rast"
-                colorRgb="251, 191, 36" tooltip="Mesec sa najvećim rastom u odnosu na prethodni"
+                colorRgb="251, 191, 36"
+                description="Mesec sa najvećim procentualnim rastom u odnosu na prethodni. Ovo pokazuje momentum kampanje."
+                extraInfo="Rast se računa: (ovaj mesec - prošli) ÷ prošli × 100"
               />
             )}
           </section>
 
-          {/* Clips & Influencers Tables */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '24px', marginBottom: '28px' }}>
+          {/* Clips & Influencers Tables - Responsive */}
+          <div className="clips-influencers-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '24px', marginBottom: '28px' }}>
+            <style>{`
+              @media (max-width: 900px) {
+                .clips-influencers-grid {
+                  grid-template-columns: 1fr !important;
+                }
+              }
+            `}</style>
             
             {/* All Clips */}
             <section style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '18px', overflow: 'hidden' }}>
