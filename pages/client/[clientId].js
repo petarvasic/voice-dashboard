@@ -600,8 +600,8 @@ export default function ClientDashboard() {
     
     // Platform data for pie
     const platformData = [
-      { name: 'TikTok', value: tiktokViews, color: '#ff0050' },
-      { name: 'Instagram', value: instaViews, color: '#E4405F' }
+      { name: 'TikTok', value: tiktokViews, color: '#00f2ea' },
+      { name: 'Instagram', value: instaViews, color: '#C13584' }
     ].filter(d => d.value > 0);
     
     // Data for modals (by month)
