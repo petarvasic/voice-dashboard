@@ -74,6 +74,196 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+// Boost Modal Component
+const BoostModal = ({ isOpen, onClose, clientName }) => {
+  if (!isOpen) return null;
+
+  const packages = [
+    { views: '1M', price: '1.900', priceNum: 1900 },
+    { views: '2M', price: '3.500', priceNum: 3500, popular: true },
+    { views: '3M', price: '4.900', priceNum: 4900 }
+  ];
+
+  const handleSelect = (pkg) => {
+    const subject = encodeURIComponent(`Boost narudžbina - ${clientName} - ${pkg.views} pregleda`);
+    const body = encodeURIComponent(
+`Poštovani,
+
+Želim da naručim Boost paket za kampanju.
+
+Klijent: ${clientName}
+Paket: ${pkg.views} pregleda
+Cena: ${pkg.price} EUR
+
+Molim vas da me kontaktirate za dalji dogovor.
+
+Hvala!`
+    );
+    window.location.href = `mailto:teodora@vasicmedia.com?subject=${subject}&body=${body}`;
+    onClose();
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 0, 0, 0.8)',
+      backdropFilter: 'blur(8px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+      padding: '20px'
+    }} onClick={onClose}>
+      <div style={{
+        background: 'linear-gradient(180deg, #1a1a2e 0%, #16162a 100%)',
+        borderRadius: '20px',
+        padding: '32px',
+        maxWidth: '600px',
+        width: '100%',
+        border: '1px solid rgba(255,255,255,0.1)',
+        boxShadow: '0 25px 50px rgba(0,0,0,0.5)'
+      }} onClick={e => e.stopPropagation()}>
+        
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            background: 'linear-gradient(135deg, #818cf8 0%, #a78bfa 100%)',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 16px'
+          }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+          </div>
+          <h2 style={{ fontSize: '22px', fontWeight: '700', margin: '0 0 8px', color: '#fff' }}>
+            Boost vaše kampanje
+          </h2>
+          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+            Povećajte doseg sa dodatnim organskim pregledima
+          </p>
+        </div>
+
+        {/* Packages */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
+          {packages.map((pkg, i) => (
+            <div
+              key={i}
+              onClick={() => handleSelect(pkg)}
+              style={{
+                background: pkg.popular 
+                  ? 'linear-gradient(135deg, rgba(129, 140, 248, 0.2) 0%, rgba(167, 139, 250, 0.2) 100%)'
+                  : 'rgba(255,255,255,0.03)',
+                border: pkg.popular ? '2px solid #818cf8' : '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '14px',
+                padding: '20px 16px',
+                textAlign: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                position: 'relative'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.borderColor = '#818cf8';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.borderColor = pkg.popular ? '#818cf8' : 'rgba(255,255,255,0.08)';
+              }}
+            >
+              {pkg.popular && (
+                <span style={{
+                  position: 'absolute',
+                  top: '-10px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  background: '#818cf8',
+                  color: '#fff',
+                  fontSize: '9px',
+                  fontWeight: '700',
+                  padding: '3px 10px',
+                  borderRadius: '100px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  Popularno
+                </span>
+              )}
+              <p style={{ 
+                fontSize: '32px', 
+                fontWeight: '700', 
+                color: '#fff',
+                margin: '0 0 4px'
+              }}>
+                {pkg.views}
+              </p>
+              <p style={{ 
+                fontSize: '11px', 
+                color: 'rgba(255,255,255,0.4)',
+                margin: '0 0 12px',
+                textTransform: 'uppercase',
+                letterSpacing: '1px'
+              }}>
+                pregleda
+              </p>
+              <p style={{ 
+                fontSize: '20px', 
+                fontWeight: '600', 
+                color: pkg.popular ? '#818cf8' : '#fff',
+                margin: 0
+              }}>
+                €{pkg.price}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer note */}
+        <p style={{ 
+          fontSize: '12px', 
+          color: 'rgba(255,255,255,0.3)', 
+          textAlign: 'center',
+          margin: 0
+        }}>
+          Kliknite na paket da pošaljete narudžbinu
+        </p>
+
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            background: 'rgba(255,255,255,0.1)',
+            border: 'none',
+            borderRadius: '50%',
+            width: '32px',
+            height: '32px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'rgba(255,255,255,0.5)'
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export default function ClientDashboard() {
   const router = useRouter();
   const { clientId } = router.query;
@@ -84,6 +274,7 @@ export default function ClientDashboard() {
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(0);
   const [clips, setClips] = useState([]);
   const [clipsLoading, setClipsLoading] = useState(false);
+  const [showBoostModal, setShowBoostModal] = useState(false);
 
   useEffect(() => {
     if (!clientId) return;
@@ -172,6 +363,13 @@ export default function ClientDashboard() {
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </Head>
 
+      {/* Boost Modal */}
+      <BoostModal 
+        isOpen={showBoostModal} 
+        onClose={() => setShowBoostModal(false)} 
+        clientName={clientData?.client?.name}
+      />
+
       <div style={{ minHeight: '100vh', background: '#0f0f1a', fontFamily: "'Inter', -apple-system, sans-serif", color: '#ffffff' }}>
         
         {/* Header */}
@@ -183,13 +381,42 @@ export default function ClientDashboard() {
           top: 0,
           zIndex: 100
         }}>
-          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <VoiceLogo />
-            <div style={{ height: '24px', width: '1px', background: 'rgba(255,255,255,0.1)' }} />
-            <div>
-              <h1 style={{ fontSize: '16px', fontWeight: '600', margin: 0 }}>{clientData?.client?.name}</h1>
-              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Campaign Dashboard</p>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              <VoiceLogo />
+              <div style={{ height: '24px', width: '1px', background: 'rgba(255,255,255,0.1)' }} />
+              <div>
+                <h1 style={{ fontSize: '16px', fontWeight: '600', margin: 0 }}>{clientData?.client?.name}</h1>
+                <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Campaign Dashboard</p>
+              </div>
             </div>
+            
+            {/* Boost Button */}
+            <button
+              onClick={() => setShowBoostModal(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 18px',
+                background: 'linear-gradient(135deg, #818cf8 0%, #a78bfa 100%)',
+                border: 'none',
+                borderRadius: '10px',
+                color: '#fff',
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 4px 12px rgba(129, 140, 248, 0.3)'
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
+              Boost kampanju
+            </button>
           </div>
         </header>
 
