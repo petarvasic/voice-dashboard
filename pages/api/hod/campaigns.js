@@ -1,4 +1,4 @@
-// pages/api/hod/campaigns.js - HOD Dashboard API
+// pages/api/hod/campaigns.js - HOD Dashboard API (Simplified)
 import Airtable from 'airtable';
 
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(process.env.AIRTABLE_BASE_ID);
@@ -24,7 +24,6 @@ const calculateStatus = (percentDelivered, startDate, endDate) => {
   const end = parseDate(endDate);
   
   if (!start || !end) {
-    // Fallback if dates missing
     if (percentDelivered >= 100) return { status: 'DONE', color: 'green', priority: 4 };
     if (percentDelivered >= 80) return { status: 'OK', color: 'green', priority: 3 };
     if (percentDelivered >= 50) return { status: 'PRATI', color: 'yellow', priority: 2 };
@@ -35,12 +34,10 @@ const calculateStatus = (percentDelivered, startDate, endDate) => {
   const daysPassed = Math.max((now - start) / (1000 * 60 * 60 * 24), 0);
   const daysRemaining = Math.max((end - now) / (1000 * 60 * 60 * 24), 0);
   
-  // Expected progress percentage based on time elapsed
   const expectedProgress = Math.min((daysPassed / totalDays) * 100, 100);
   const actualProgress = percentDelivered || 0;
   const gap = actualProgress - expectedProgress;
   
-  // Determine status
   if (actualProgress >= 100) {
     return { status: 'DONE', color: 'green', priority: 4, gap, expectedProgress, daysRemaining: Math.round(daysRemaining) };
   }
@@ -66,32 +63,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Fetch all contract months
+    // Fetch all contract months - without specifying fields (get all)
     const contractMonths = await base('Contract Months')
       .select({
-        fields: [
-          'Month',
-          'Client',
-          'End Date',
-          'Start Date',
-          '%Delivered',
-          'Progress Status',
-          'Campaign Goal',
-          'Number of Views Achieved',
-          'Number of Likes Achieved',
-          'Number of Comment Achieved',
-          'Number of Shares Achieved',
-          'Contract Status',
-          'Published Clips',
-          'Influencers'
-        ]
+        maxRecords: 500
       })
       .all();
 
     // Fetch all clients for names
     const clients = await base('Clients')
       .select({
-        fields: ['Name', 'Logo']
+        maxRecords: 200
       })
       .all();
 
@@ -104,21 +86,29 @@ export default async function handler(req, res) {
       };
     });
 
-    // Process campaigns
+    // Process campaigns - adapt to actual field names
     const campaigns = contractMonths.map(record => {
       const fields = record.fields;
+      
+      // Get client - could be array or single value
       const clientIds = fields['Client'] || [];
-      const clientId = clientIds[0];
+      const clientId = Array.isArray(clientIds) ? clientIds[0] : clientIds;
       const client = clientMap[clientId] || { id: clientId, name: 'Unknown', logo: null };
       
-      const percentDelivered = fields['%Delivered'] || 0;
-      const startDate = fields['Start Date'];
-      const endDate = fields['End Date'];
+      // Get percent delivered - try different possible field names
+      const percentDelivered = fields['%Delivered'] || fields['% Delivered'] || fields['Percent Delivered'] || 0;
+      
+      // Get dates
+      const startDate = fields['Start Date'] || fields['StartDate'] || fields['Start'];
+      const endDate = fields['End Date'] || fields['EndDate'] || fields['End'];
+      
+      // Get goal - try different possible field names
+      const goal = fields['Goal'] || fields['Views Goal'] || fields['Target'] || 0;
+      
+      // Get delivered views
+      const delivered = fields['Number of Views Achieved'] || fields['Views Achieved'] || fields['Views'] || 0;
       
       const statusInfo = calculateStatus(percentDelivered, startDate, endDate);
-      
-      const goal = fields['Campaign Goal'] || 0;
-      const delivered = fields['Number of Views Achieved'] || 0;
       const remaining = Math.max(goal - delivered, 0);
       
       return {
@@ -143,14 +133,15 @@ export default async function handler(req, res) {
       };
     });
 
-    // Filter only active campaigns (not closed/completed old ones)
+    // Filter only active campaigns
     const activeCampaigns = campaigns.filter(c => {
-      // Include if contract is Active or if it ended recently (last 30 days)
       if (c.contractStatus === 'Active') return true;
       if (c.endDate) {
         const end = parseDate(c.endDate);
-        const daysSinceEnd = (new Date() - end) / (1000 * 60 * 60 * 24);
-        return daysSinceEnd <= 30;
+        if (end) {
+          const daysSinceEnd = (new Date() - end) / (1000 * 60 * 60 * 24);
+          return daysSinceEnd <= 30;
+        }
       }
       return false;
     });
@@ -176,12 +167,12 @@ export default async function handler(req, res) {
         : 0
     };
 
-    // Group by client for client view
+    // Group by client
     const byClient = {};
     activeCampaigns.forEach(campaign => {
-      const clientId = campaign.clientId;
-      if (!byClient[clientId]) {
-        byClient[clientId] = {
+      const cId = campaign.clientId;
+      if (!byClient[cId]) {
+        byClient[cId] = {
           client: campaign.client,
           campaigns: [],
           totalGoal: 0,
@@ -190,14 +181,13 @@ export default async function handler(req, res) {
           behindCount: 0
         };
       }
-      byClient[clientId].campaigns.push(campaign);
-      byClient[clientId].totalGoal += campaign.goal || 0;
-      byClient[clientId].totalDelivered += campaign.delivered || 0;
-      if (campaign.status === 'KRITIČNO') byClient[clientId].criticalCount++;
-      if (campaign.status === 'KASNI') byClient[clientId].behindCount++;
+      byClient[cId].campaigns.push(campaign);
+      byClient[cId].totalGoal += campaign.goal || 0;
+      byClient[cId].totalDelivered += campaign.delivered || 0;
+      if (campaign.status === 'KRITIČNO') byClient[cId].criticalCount++;
+      if (campaign.status === 'KASNI') byClient[cId].behindCount++;
     });
 
-    // Convert to array and calculate averages
     const clientStats = Object.values(byClient).map(client => ({
       ...client,
       avgDelivery: client.campaigns.length > 0
@@ -206,29 +196,16 @@ export default async function handler(req, res) {
       worstGap: Math.min(...client.campaigns.map(c => c.gap || 0))
     }));
 
-    // Sort clients by worst status
     clientStats.sort((a, b) => {
       if (a.criticalCount !== b.criticalCount) return b.criticalCount - a.criticalCount;
       if (a.behindCount !== b.behindCount) return b.behindCount - a.behindCount;
       return a.worstGap - b.worstGap;
     });
 
-    // Get unique months for filter
-    const months = [...new Set(activeCampaigns.map(c => {
-      if (c.endDate) {
-        const date = parseDate(c.endDate);
-        if (date) {
-          return date.toLocaleDateString('sr-RS', { month: 'long', year: 'numeric' });
-        }
-      }
-      return c.month;
-    }))].filter(Boolean);
-
     res.status(200).json({
       campaigns: activeCampaigns,
       stats,
       clientStats,
-      months,
       generatedAt: new Date().toISOString()
     });
 
