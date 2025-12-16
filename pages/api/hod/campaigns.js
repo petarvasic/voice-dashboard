@@ -79,9 +79,11 @@ export default async function handler(req, res) {
 
     const clientMap = {};
     clients.forEach(client => {
+      // Try different possible field names for client name
+      const name = client.fields['Name'] || client.fields['Client Name'] || client.fields['Company'] || client.fields['Ime'] || 'Unknown';
       clientMap[client.id] = {
         id: client.id,
-        name: client.fields['Name'] || 'Unknown',
+        name: name,
         logo: client.fields['Logo']?.[0]?.url || null
       };
     });
@@ -93,10 +95,25 @@ export default async function handler(req, res) {
       // Get client - could be array or single value
       const clientIds = fields['Client'] || [];
       const clientId = Array.isArray(clientIds) ? clientIds[0] : clientIds;
-      const client = clientMap[clientId] || { id: clientId, name: 'Unknown', logo: null };
+      let client = clientMap[clientId] || { id: clientId, name: 'Unknown', logo: null };
+      
+      // If client name is still Unknown, try to extract from Month field
+      // Month format is typically "Client Name – Month Year"
+      const monthField = fields['Month'] || '';
+      if (client.name === 'Unknown' && monthField.includes('–')) {
+        const extractedName = monthField.split('–')[0].trim();
+        if (extractedName) {
+          client = { ...client, name: extractedName };
+        }
+      }
       
       // Get percent delivered - try different possible field names
-      const percentDelivered = fields['%Delivered'] || fields['% Delivered'] || fields['Percent Delivered'] || 0;
+      // Airtable stores as decimal (0.5 = 50%), so multiply by 100
+      let percentDelivered = fields['%Delivered'] || fields['% Delivered'] || fields['Percent Delivered'] || 0;
+      if (percentDelivered > 0 && percentDelivered < 5) {
+        // It's stored as decimal (0.5), convert to percent (50)
+        percentDelivered = percentDelivered * 100;
+      }
       
       // Get dates
       const startDate = fields['Start Date'] || fields['StartDate'] || fields['Start'];
