@@ -581,81 +581,138 @@ export default function HODDashboard() {
 
         <main style={{ maxWidth: '1600px', margin: '0 auto', padding: '28px' }}>
           
-          {/* Main Status Cards - 4 important buttons */}
-          <style>{`
-            @media (max-width: 900px) {
-              .status-grid { grid-template-columns: repeat(2, 1fr) !important; }
-            }
-            @media (max-width: 500px) {
-              .status-grid { grid-template-columns: 1fr !important; }
-            }
-          `}</style>
-          <section className="status-grid" style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '16px',
-            marginBottom: '24px'
-          }}>
-            <StatCard
-              icon="🚨"
-              label="Kritično"
-              value={stats.critical || 0}
-              subValue={stats.critical > 0 ? 'Potrebna akcija!' : 'Sve OK'}
-              color="239, 68, 68"
-              onClick={() => { setActiveTab('critical'); setStatusFilter('KRITIČNO'); }}
-              isMain={true}
-            />
-            <StatCard
-              icon="⚠️"
-              label="Kasni"
-              value={stats.behind || 0}
-              subValue="Gap > 20%"
-              color="249, 115, 22"
-              onClick={() => { setActiveTab('all'); setStatusFilter('KASNI'); }}
-              isMain={true}
-            />
-            <StatCard
-              icon="👀"
-              label="Prati"
-              value={stats.watch || 0}
-              subValue="Gap 10-20%"
-              color="234, 179, 8"
-              onClick={() => { setActiveTab('all'); setStatusFilter('PRATI'); }}
-              isMain={true}
-            />
-            <StatCard
-              icon="✅"
-              label="OK / Done"
-              value={(stats.ok || 0) + (stats.done || 0)}
-              subValue="Na putu"
-              color="34, 197, 94"
-              onClick={() => { setActiveTab('all'); setStatusFilter('OK'); }}
-              isMain={true}
-            />
-          </section>
-
-          {/* Secondary Info Row */}
+          {/* Info Bar - Just displays data, not clickable */}
           <section style={{
             display: 'flex',
-            gap: '24px',
-            marginBottom: '24px',
-            padding: '16px 20px',
-            background: 'rgba(255,255,255,0.02)',
-            borderRadius: '12px',
-            border: '1px solid rgba(255,255,255,0.06)'
+            gap: '16px',
+            marginBottom: '20px',
+            flexWrap: 'wrap'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '16px' }}>🎯</span>
-              <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>Aktivne kampanje:</span>
-              <span style={{ fontSize: '15px', fontWeight: '700', color: '#fff' }}>{stats.total || 0}</span>
+            <div style={{
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: '12px',
+              padding: '16px 24px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <span style={{ fontSize: '24px' }}>🎯</span>
+              <div>
+                <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: 0, textTransform: 'uppercase' }}>Aktivne kampanje</p>
+                <p style={{ fontSize: '28px', fontWeight: '800', margin: 0, color: '#fff' }}>{stats.total || 0}</p>
+              </div>
             </div>
-            <div style={{ height: '20px', width: '1px', background: 'rgba(255,255,255,0.1)' }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '16px' }}>📊</span>
-              <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>Prosečan delivery:</span>
-              <span style={{ fontSize: '15px', fontWeight: '700', color: stats.avgDelivery >= 80 ? '#4ade80' : stats.avgDelivery >= 50 ? '#fbbf24' : '#f87171' }}>
-                {formatPercent(stats.avgDelivery)}
-              </span>
+            <div style={{
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: '12px',
+              padding: '16px 24px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <span style={{ fontSize: '24px' }}>📊</span>
+              <div>
+                <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: 0, textTransform: 'uppercase' }}>Prosečan delivery</p>
+                <p style={{ fontSize: '28px', fontWeight: '800', margin: 0, color: stats.avgDelivery >= 80 ? '#4ade80' : stats.avgDelivery >= 50 ? '#fbbf24' : '#f87171' }}>
+                  {formatPercent(stats.avgDelivery)}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Action Buttons - Main interactive elements */}
+          <style>{`
+            .action-btn {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              padding: 24px 16px;
+              border-radius: 16px;
+              cursor: pointer;
+              transition: all 0.2s ease;
+              border: 2px solid transparent;
+              text-align: center;
+              min-height: 120px;
+            }
+            .action-btn:hover {
+              transform: translateY(-4px);
+            }
+            .action-btn:active {
+              transform: translateY(-2px);
+            }
+            .action-grid {
+              display: grid;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 12px;
+              margin-bottom: 28px;
+            }
+            @media (max-width: 800px) {
+              .action-grid { grid-template-columns: repeat(2, 1fr); }
+            }
+            @media (max-width: 450px) {
+              .action-grid { grid-template-columns: repeat(2, 1fr); }
+              .action-btn { min-height: 100px; padding: 16px 12px; }
+            }
+          `}</style>
+          <section className="action-grid">
+            <div 
+              className="action-btn"
+              onClick={() => { setActiveTab('critical'); setStatusFilter('KRITIČNO'); }}
+              style={{
+                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.05) 100%)',
+                borderColor: 'rgba(239, 68, 68, 0.4)',
+                boxShadow: '0 4px 20px rgba(239, 68, 68, 0.15)'
+              }}
+            >
+              <span style={{ fontSize: '32px', marginBottom: '8px' }}>🚨</span>
+              <p style={{ fontSize: '36px', fontWeight: '800', margin: '0 0 4px', color: '#fff' }}>{stats.critical || 0}</p>
+              <p style={{ fontSize: '12px', fontWeight: '600', margin: 0, color: '#f87171', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Kritično</p>
+              {stats.critical > 0 && <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', margin: '4px 0 0' }}>Potrebna akcija!</p>}
+            </div>
+
+            <div 
+              className="action-btn"
+              onClick={() => { setActiveTab('all'); setStatusFilter('KASNI'); }}
+              style={{
+                background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(249, 115, 22, 0.05) 100%)',
+                borderColor: 'rgba(249, 115, 22, 0.4)',
+                boxShadow: '0 4px 20px rgba(249, 115, 22, 0.15)'
+              }}
+            >
+              <span style={{ fontSize: '32px', marginBottom: '8px' }}>⚠️</span>
+              <p style={{ fontSize: '36px', fontWeight: '800', margin: '0 0 4px', color: '#fff' }}>{stats.behind || 0}</p>
+              <p style={{ fontSize: '12px', fontWeight: '600', margin: 0, color: '#fb923c', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Kasni</p>
+            </div>
+
+            <div 
+              className="action-btn"
+              onClick={() => { setActiveTab('all'); setStatusFilter('PRATI'); }}
+              style={{
+                background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.2) 0%, rgba(234, 179, 8, 0.05) 100%)',
+                borderColor: 'rgba(234, 179, 8, 0.4)',
+                boxShadow: '0 4px 20px rgba(234, 179, 8, 0.15)'
+              }}
+            >
+              <span style={{ fontSize: '32px', marginBottom: '8px' }}>👀</span>
+              <p style={{ fontSize: '36px', fontWeight: '800', margin: '0 0 4px', color: '#fff' }}>{stats.watch || 0}</p>
+              <p style={{ fontSize: '12px', fontWeight: '600', margin: 0, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Prati</p>
+            </div>
+
+            <div 
+              className="action-btn"
+              onClick={() => { setActiveTab('all'); setStatusFilter('OK'); }}
+              style={{
+                background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(34, 197, 94, 0.05) 100%)',
+                borderColor: 'rgba(34, 197, 94, 0.4)',
+                boxShadow: '0 4px 20px rgba(34, 197, 94, 0.15)'
+              }}
+            >
+              <span style={{ fontSize: '32px', marginBottom: '8px' }}>✅</span>
+              <p style={{ fontSize: '36px', fontWeight: '800', margin: '0 0 4px', color: '#fff' }}>{(stats.ok || 0) + (stats.done || 0)}</p>
+              <p style={{ fontSize: '12px', fontWeight: '600', margin: 0, color: '#4ade80', textTransform: 'uppercase', letterSpacing: '0.5px' }}>OK / Done</p>
             </div>
           </section>
 
