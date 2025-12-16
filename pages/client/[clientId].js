@@ -726,6 +726,16 @@ export default function ClientDashboard() {
     const clipsWithViralScore = clips.filter(c => c.views > 100).map(c => ({ ...c, viralScore: (c.shares || 0) / c.views * 1000 }));
     const mostViralClip = clipsWithViralScore.sort((a, b) => b.viralScore - a.viralScore)[0] || null;
     
+    // Fast rising - klip sa najviše views objavljen u poslednjih 7 dana
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const recentClips = clips.filter(c => {
+      if (!c.publishDate) return false;
+      const pubDate = new Date(c.publishDate);
+      return pubDate >= sevenDaysAgo;
+    });
+    const fastRisingClip = recentClips.sort((a, b) => (b.views || 0) - (a.views || 0))[0] || null;
+    
     // Most saved
     const mostSavedClip = [...clips].sort((a, b) => (b.saves || 0) - (a.saves || 0))[0] || null;
     
@@ -785,7 +795,8 @@ export default function ClientDashboard() {
       influencerList, topClips, topClip, mostViralClip, mostSavedClip,
       tiktokViews, instaViews, tiktokClips: tiktokClips.length, instaClips: instaClips.length,
       bestDay, bestMonth, fastestGrowingMonth, engagementBreakdown, platformData,
-      viewsByMonth, likesByMonth, commentsByMonth, sharesByMonth, viewsByInfluencer, likesByInfluencer
+      viewsByMonth, likesByMonth, commentsByMonth, sharesByMonth, viewsByInfluencer, likesByInfluencer,
+      fastRisingClip
     };
   }, [clientData, clips, selectedMonthIndex]);
 
@@ -1008,13 +1019,13 @@ export default function ClientDashboard() {
                 extraInfo={`Prosečno ${formatNumber(Math.round(analytics.influencerList[0].views / analytics.influencerList[0].clips))} pregleda po klipu`}
               />
             )}
-            {analytics.mostViralClip && (
-              <HighlightCard icon="🚀" title="Most Viral" name={analytics.mostViralClip.influencer}
-                value={analytics.mostViralClip.viralScore.toFixed(1)} subtext="viral score"
-                image={analytics.mostViralClip.influencerImage} colorRgb="52, 211, 153"
-                link={analytics.mostViralClip.link}
-                description="Viral Score meri koliko se sadržaj deli u odnosu na preglede. Viši score znači da ljudi aktivno dele ovaj klip sa drugima."
-                extraInfo={`Formula: (deljenja ÷ pregledi) × 1000 • ${formatNumber(analytics.mostViralClip.shares || 0)} deljenja`}
+            {analytics.fastRisingClip && (
+              <HighlightCard icon="⚡" title="Brzi Rast" name={analytics.fastRisingClip.influencer}
+                value={formatNumber(analytics.fastRisingClip.views)} subtext="pregleda"
+                image={analytics.fastRisingClip.influencerImage} colorRgb="52, 211, 153"
+                link={analytics.fastRisingClip.link}
+                description="Klip sa najviše pregleda objavljen u poslednjih 7 dana. Ovo je vaš trenutno najuspešniji 'fresh' sadržaj."
+                extraInfo={`Objavljeno: ${formatDate(analytics.fastRisingClip.publishDate)} • ${analytics.fastRisingClip.platform}`}
               />
             )}
             {analytics.mostSavedClip && analytics.mostSavedClip.saves > 0 && (
