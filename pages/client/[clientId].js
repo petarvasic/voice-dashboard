@@ -17,7 +17,7 @@ const formatDate = (dateStr) => {
   return date.toLocaleDateString('sr-RS', { day: 'numeric', month: 'short' });
 };
 
-// VOICE Logo - Light version for dark bg
+// VOICE Logo
 const VoiceLogo = () => (
   <svg width="100" height="32" viewBox="0 0 100 32" fill="none" xmlns="http://www.w3.org/2000/svg">
     <text x="0" y="24" fontFamily="-apple-system, BlinkMacSystemFont, sans-serif" fontSize="24" fontWeight="700" fill="#ffffff">voice</text>
@@ -44,7 +44,7 @@ const PlatformIcon = ({ platform }) => {
   return null;
 };
 
-// Status Badge - Dark version
+// Status Badge
 const StatusBadge = ({ status }) => {
   const getStatusStyle = () => {
     switch(status) {
@@ -87,7 +87,6 @@ export default function ClientDashboard() {
 
   useEffect(() => {
     if (!clientId) return;
-    
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -102,13 +101,11 @@ export default function ClientDashboard() {
         setLoading(false);
       }
     };
-    
     fetchData();
   }, [clientId]);
 
   useEffect(() => {
     if (!clientData?.months?.[selectedMonthIndex]) return;
-    
     const fetchClips = async () => {
       try {
         setClipsLoading(true);
@@ -124,29 +121,14 @@ export default function ClientDashboard() {
         setClipsLoading(false);
       }
     };
-    
     fetchClips();
   }, [clientData, selectedMonthIndex]);
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#0f0f1a'
-      }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f0f1a' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{
-            width: '32px',
-            height: '32px',
-            border: '2px solid rgba(255,255,255,0.1)',
-            borderTopColor: '#818cf8',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 16px'
-          }} />
+          <div style={{ width: '32px', height: '32px', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: '#818cf8', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>Učitavanje...</p>
         </div>
@@ -156,13 +138,7 @@ export default function ClientDashboard() {
 
   if (error) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#0f0f1a'
-      }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f0f1a' }}>
         <div style={{ textAlign: 'center', padding: '40px' }}>
           <p style={{ color: '#f87171', fontSize: '16px', marginBottom: '8px' }}>Greška</p>
           <p style={{ color: 'rgba(255,255,255,0.5)' }}>{error}</p>
@@ -193,16 +169,11 @@ export default function ClientDashboard() {
       <Head>
         <title>{clientData?.client?.name || 'Dashboard'} | VOICE</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </Head>
 
-      <div style={{ 
-        minHeight: '100vh', 
-        background: '#0f0f1a',
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-        color: '#ffffff'
-      }}>
+      <div style={{ minHeight: '100vh', background: '#0f0f1a', fontFamily: "'Inter', -apple-system, sans-serif", color: '#ffffff' }}>
+        
         {/* Header */}
         <header style={{
           background: 'rgba(15, 15, 26, 0.8)',
@@ -212,31 +183,19 @@ export default function ClientDashboard() {
           top: 0,
           zIndex: 100
         }}>
-          <div style={{
-            maxWidth: '1200px',
-            margin: '0 auto',
-            padding: '14px 24px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-              <VoiceLogo />
-              <div style={{ height: '24px', width: '1px', background: 'rgba(255,255,255,0.1)' }} />
-              <div>
-                <h1 style={{ fontSize: '16px', fontWeight: '600', color: '#fff', margin: 0 }}>
-                  {clientData?.client?.name}
-                </h1>
-                <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Campaign Dashboard</p>
-              </div>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <VoiceLogo />
+            <div style={{ height: '24px', width: '1px', background: 'rgba(255,255,255,0.1)' }} />
+            <div>
+              <h1 style={{ fontSize: '16px', fontWeight: '600', margin: 0 }}>{clientData?.client?.name}</h1>
+              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Campaign Dashboard</p>
             </div>
           </div>
         </header>
 
-        {/* Main Content */}
         <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
           
-          {/* Cumulative Progress - TOP */}
+          {/* Cumulative Progress - Only if multiple months */}
           {cumulative && cumulative.monthsCount > 1 && (
             <section style={{
               background: 'linear-gradient(135deg, rgba(129, 140, 248, 0.1) 0%, rgba(167, 139, 250, 0.1) 100%)',
@@ -245,61 +204,27 @@ export default function ClientDashboard() {
               padding: '20px 24px',
               marginBottom: '16px'
             }}>
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                marginBottom: '14px'
-              }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                 <div>
-                  <p style={{ 
-                    fontSize: '11px', 
-                    color: 'rgba(255,255,255,0.5)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '1px',
-                    marginBottom: '6px',
-                    fontWeight: '500'
-                  }}>
+                  <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>
                     Ukupan napredak paketa ({cumulative.monthsCount} meseci)
                   </p>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-                    <span style={{ fontSize: '32px', fontWeight: '700' }}>
-                      {formatNumber(cumulative.totalViews)}
-                    </span>
-                    <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>
-                      / {formatNumber(cumulative.totalGoal)} pregleda
-                    </span>
+                    <span style={{ fontSize: '32px', fontWeight: '700' }}>{formatNumber(cumulative.totalViews)}</span>
+                    <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>/ {formatNumber(cumulative.totalGoal)} pregleda</span>
                   </div>
                 </div>
-                <div style={{ 
-                  textAlign: 'center',
-                  background: cumulativePercent >= 1 ? 'rgba(34, 197, 94, 0.2)' : 'rgba(129, 140, 248, 0.2)',
-                  padding: '10px 20px',
-                  borderRadius: '10px'
-                }}>
-                  <p style={{ 
-                    fontSize: '28px', 
-                    fontWeight: '700',
-                    color: cumulativePercent >= 1 ? '#4ade80' : '#818cf8',
-                    margin: 0
-                  }}>
+                <div style={{ textAlign: 'center', background: cumulativePercent >= 1 ? 'rgba(34, 197, 94, 0.2)' : 'rgba(129, 140, 248, 0.2)', padding: '10px 20px', borderRadius: '10px' }}>
+                  <p style={{ fontSize: '28px', fontWeight: '700', color: cumulativePercent >= 1 ? '#4ade80' : '#818cf8', margin: 0 }}>
                     {(cumulativePercent * 100).toFixed(0)}%
                   </p>
                 </div>
               </div>
-              
-              <div style={{
-                height: '6px',
-                background: 'rgba(255,255,255,0.1)',
-                borderRadius: '100px',
-                overflow: 'hidden'
-              }}>
+              <div style={{ height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '100px', overflow: 'hidden' }}>
                 <div style={{
                   height: '100%',
                   width: `${Math.min(cumulativePercent * 100, 100)}%`,
-                  background: cumulativePercent >= 1 
-                    ? 'linear-gradient(90deg, #22c55e 0%, #4ade80 100%)'
-                    : 'linear-gradient(90deg, #818cf8 0%, #a78bfa 100%)',
+                  background: cumulativePercent >= 1 ? 'linear-gradient(90deg, #22c55e 0%, #4ade80 100%)' : 'linear-gradient(90deg, #818cf8 0%, #a78bfa 100%)',
                   borderRadius: '100px',
                   transition: 'width 1s ease-out'
                 }} />
@@ -307,122 +232,88 @@ export default function ClientDashboard() {
             </section>
           )}
 
-          {/* Metrics Grid */}
-          <section style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '12px',
-            marginBottom: '16px'
-          }}>
-            {[
-              { label: 'Ukupno pregleda', value: formatNumber(selectedMonth?.totalViews) },
-              { label: 'Lajkovi', value: formatNumber(selectedMonth?.totalLikes) },
-              { label: 'Komentari', value: formatNumber(selectedMonth?.totalComments) },
-              { label: 'Deljenja', value: formatNumber(selectedMonth?.totalShares) }
-            ].map((metric, i) => (
-              <div key={i} style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.06)',
-                borderRadius: '12px',
-                padding: '14px 18px'
-              }}>
-                <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '500' }}>
-                  {metric.label}
-                </p>
-                <p style={{ fontSize: '22px', fontWeight: '700', color: '#fff', margin: 0 }}>
-                  {metric.value}
-                </p>
-              </div>
-            ))}
-          </section>
-
-          {/* Monthly Progress - Compact */}
-          <section style={{
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: '12px',
-            padding: '16px 20px',
-            marginBottom: '16px'
-          }}>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              marginBottom: '12px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div>
-                  <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Mesečni napredak
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                    <span style={{ fontSize: '24px', fontWeight: '700' }}>{formatNumber(selectedMonth?.totalViews)}</span>
-                    <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>/ {formatNumber(selectedMonth?.campaignGoal)}</span>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: '16px', marginLeft: '24px' }}>
-                  <div>
-                    <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginBottom: '2px' }}>KLIPOVA</p>
-                    <p style={{ fontSize: '16px', fontWeight: '600', margin: 0 }}>{selectedMonth?.publishedClips || 0}</p>
-                  </div>
-                  <div>
-                    <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginBottom: '2px' }}>STATUS</p>
-                    <StatusBadge status={selectedMonth?.contractStatus || 'Active'} />
-                  </div>
-                </div>
-              </div>
-              
-              <select
-                value={selectedMonthIndex}
-                onChange={(e) => setSelectedMonthIndex(Number(e.target.value))}
-                style={{
-                  padding: '8px 32px 8px 12px',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                  background: 'rgba(255,255,255,0.05)',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  appearance: 'none',
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 10px center'
-                }}
-              >
-                {clientData?.months?.map((month, index) => (
-                  <option key={month.id} value={index} style={{ background: '#1a1a2e', color: '#fff' }}>
-                    {month.month}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* Stats + Monthly Progress Row */}
+          <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
             
+            {/* Left: 3 Metrics */}
             <div style={{
-              height: '8px',
-              background: 'rgba(255,255,255,0.1)',
-              borderRadius: '100px',
-              overflow: 'hidden'
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: '12px',
+              padding: '16px 20px',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '16px'
             }}>
-              <div style={{
-                height: '100%',
-                width: `${Math.min(progressPercent * 100, 100)}%`,
-                background: progressPercent >= 1 
-                  ? 'linear-gradient(90deg, #22c55e 0%, #4ade80 100%)'
-                  : 'linear-gradient(90deg, #818cf8 0%, #a78bfa 100%)',
-                borderRadius: '100px',
-                transition: 'width 0.8s ease-out'
-              }} />
+              {[
+                { label: 'Pregleda', value: formatNumber(selectedMonth?.totalViews) },
+                { label: 'Lajkova', value: formatNumber(selectedMonth?.totalLikes) },
+                { label: 'Deljenja', value: formatNumber(selectedMonth?.totalShares) }
+              ].map((metric, i) => (
+                <div key={i} style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: '24px', fontWeight: '700', margin: 0 }}>{metric.value}</p>
+                  <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', margin: '4px 0 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{metric.label}</p>
+                </div>
+              ))}
             </div>
-            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '6px', textAlign: 'right' }}>
-              {(progressPercent * 100).toFixed(0)}% isporučeno
-            </p>
+
+            {/* Right: Monthly Progress */}
+            <div style={{
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: '12px',
+              padding: '16px 20px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <select
+                    value={selectedMonthIndex}
+                    onChange={(e) => setSelectedMonthIndex(Number(e.target.value))}
+                    style={{
+                      padding: '6px 28px 6px 10px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '6px',
+                      background: 'rgba(255,255,255,0.05)',
+                      color: '#fff',
+                      cursor: 'pointer',
+                      appearance: 'none',
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 8px center'
+                    }}
+                  >
+                    {clientData?.months?.map((month, index) => (
+                      <option key={month.id} value={index} style={{ background: '#1a1a2e' }}>{month.month}</option>
+                    ))}
+                  </select>
+                  <StatusBadge status={selectedMonth?.contractStatus || 'Active'} />
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ fontSize: '20px', fontWeight: '700' }}>{(progressPercent * 100).toFixed(0)}%</span>
+                  <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginLeft: '4px' }}>od {formatNumber(selectedMonth?.campaignGoal)}</span>
+                </div>
+              </div>
+              <div style={{ height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '100px', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  width: `${Math.min(progressPercent * 100, 100)}%`,
+                  background: progressPercent >= 1 ? 'linear-gradient(90deg, #22c55e 0%, #4ade80 100%)' : 'linear-gradient(90deg, #818cf8 0%, #a78bfa 100%)',
+                  borderRadius: '100px',
+                  transition: 'width 0.8s ease-out'
+                }} />
+              </div>
+              <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', marginTop: '8px' }}>
+                {selectedMonth?.publishedClips || 0} klipova objavljeno
+              </p>
+            </div>
           </section>
 
-          {/* Two Column Layout */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '16px' }}>
+          {/* Two Column: Clips + Influencers */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '16px' }}>
             
-            {/* Clips Table with fade effect */}
+            {/* Clips */}
             <section style={{
               background: 'rgba(255,255,255,0.03)',
               border: '1px solid rgba(255,255,255,0.06)',
@@ -430,57 +321,26 @@ export default function ClientDashboard() {
               overflow: 'hidden',
               position: 'relative'
             }}>
-              <div style={{
-                padding: '14px 20px',
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h2 style={{ fontSize: '14px', fontWeight: '600', margin: 0 }}>Objavljeni klipovi</h2>
-                <span style={{ 
-                  fontSize: '11px', 
-                  color: 'rgba(255,255,255,0.4)',
-                  background: 'rgba(255,255,255,0.05)',
-                  padding: '3px 10px',
-                  borderRadius: '100px'
-                }}>
+                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.05)', padding: '3px 10px', borderRadius: '100px' }}>
                   {clips.length} klipova
                 </span>
               </div>
               
               {clipsLoading ? (
-                <div style={{ padding: '40px', textAlign: 'center' }}>
-                  <p style={{ color: 'rgba(255,255,255,0.4)' }}>Učitavanje...</p>
-                </div>
+                <div style={{ padding: '40px', textAlign: 'center' }}><p style={{ color: 'rgba(255,255,255,0.4)' }}>Učitavanje...</p></div>
               ) : clips.length === 0 ? (
-                <div style={{ padding: '40px', textAlign: 'center' }}>
-                  <p style={{ color: 'rgba(255,255,255,0.4)' }}>Nema klipova za ovaj mesec</p>
-                </div>
+                <div style={{ padding: '40px', textAlign: 'center' }}><p style={{ color: 'rgba(255,255,255,0.4)' }}>Nema klipova</p></div>
               ) : (
                 <div style={{ position: 'relative' }}>
-                  <div style={{ maxHeight: '380px', overflowY: 'auto' }}>
+                  <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
                     {clips.map((clip, i) => (
-                      <div 
-                        key={clip.id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          padding: '10px 20px',
-                          borderBottom: '1px solid rgba(255,255,255,0.04)',
-                          gap: '12px'
-                        }}
-                      >
+                      <div key={clip.id} style={{ display: 'flex', alignItems: 'center', padding: '10px 20px', borderBottom: '1px solid rgba(255,255,255,0.04)', gap: '12px' }}>
                         <div style={{
-                          width: '36px',
-                          height: '36px',
-                          borderRadius: '50%',
-                          overflow: 'hidden',
-                          background: clip.influencerImage ? 'transparent' : `linear-gradient(135deg, hsl(${(i * 47) % 360}, 50%, 50%) 0%, hsl(${(i * 47 + 30) % 360}, 50%, 40%) 100%)`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0
+                          width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
+                          background: clip.influencerImage ? 'transparent' : `linear-gradient(135deg, hsl(${(i * 47) % 360}, 50%, 50%), hsl(${(i * 47 + 30) % 360}, 50%, 40%))`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center'
                         }}>
                           {clip.influencerImage ? (
                             <img src={clip.influencerImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -488,48 +348,30 @@ export default function ClientDashboard() {
                             <span style={{ color: '#fff', fontWeight: '600', fontSize: '13px' }}>{clip.influencer?.charAt(0) || '?'}</span>
                           )}
                         </div>
-                        
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontWeight: '500', fontSize: '13px', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {clip.influencer}
-                          </p>
+                          <p style={{ fontWeight: '500', fontSize: '13px', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{clip.influencer}</p>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
                             <PlatformIcon platform={clip.platform} />
                             <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>{formatDate(clip.publishDate)}</span>
                           </div>
                         </div>
-                        
                         <div style={{ textAlign: 'right', minWidth: '60px' }}>
                           <p style={{ fontSize: '13px', fontWeight: '600', margin: 0 }}>{formatNumber(clip.views)}</p>
                           <p style={{ fontSize: '9px', color: 'rgba(255,255,255,0.3)', margin: 0 }}>pregleda</p>
                         </div>
-                        
                         <StatusBadge status={clip.status} />
-                        
                         {clip.link ? (
                           <a href={clip.link} target="_blank" rel="noopener noreferrer" style={{
-                            padding: '5px 10px',
-                            background: 'rgba(129, 140, 248, 0.2)',
-                            borderRadius: '6px',
-                            color: '#818cf8',
-                            textDecoration: 'none',
-                            fontSize: '11px',
-                            fontWeight: '600'
-                          }}>
-                            Link
-                          </a>
+                            padding: '5px 10px', background: 'rgba(129, 140, 248, 0.2)', borderRadius: '6px',
+                            color: '#818cf8', textDecoration: 'none', fontSize: '11px', fontWeight: '600'
+                          }}>Link</a>
                         ) : <span style={{ width: '40px' }} />}
                       </div>
                     ))}
                   </div>
-                  {/* Fade effect at bottom */}
                   {clips.length > 6 && (
                     <div style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      height: '60px',
+                      position: 'absolute', bottom: 0, left: 0, right: 0, height: '60px',
                       background: 'linear-gradient(to top, rgba(15, 15, 26, 1) 0%, rgba(15, 15, 26, 0) 100%)',
                       pointerEvents: 'none'
                     }} />
@@ -538,62 +380,55 @@ export default function ClientDashboard() {
               )}
             </section>
 
-            {/* Influencers Sidebar */}
+            {/* Influencers with fade scroll */}
             <section style={{
               background: 'rgba(255,255,255,0.03)',
               border: '1px solid rgba(255,255,255,0.06)',
               borderRadius: '12px',
-              padding: '14px 16px',
-              height: 'fit-content'
+              overflow: 'hidden',
+              position: 'relative'
             }}>
-              <h3 style={{ fontSize: '12px', fontWeight: '600', marginBottom: '12px', color: 'rgba(255,255,255,0.7)' }}>
-                Influenseri ({uniqueInfluencers.length})
-              </h3>
+              <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                <h3 style={{ fontSize: '13px', fontWeight: '600', margin: 0 }}>Influenseri ({uniqueInfluencers.length})</h3>
+              </div>
               
               {uniqueInfluencers.length === 0 ? (
-                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>Nema podataka</p>
+                <div style={{ padding: '30px', textAlign: 'center' }}><p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>Nema podataka</p></div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {uniqueInfluencers.slice(0, 8).map((inf, i) => (
-                    <div key={i} style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '8px 10px',
-                      background: 'rgba(255,255,255,0.03)',
-                      borderRadius: '8px'
-                    }}>
-                      <div style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '50%',
-                        overflow: 'hidden',
-                        background: inf.image ? 'transparent' : `linear-gradient(135deg, hsl(${(i * 67) % 360}, 50%, 50%) 0%, hsl(${(i * 67 + 40) % 360}, 50%, 40%) 100%)`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0
+                <div style={{ position: 'relative' }}>
+                  <div style={{ maxHeight: '360px', overflowY: 'auto', padding: '8px' }}>
+                    {uniqueInfluencers.map((inf, i) => (
+                      <div key={i} style={{
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '8px 10px', marginBottom: '4px',
+                        background: 'rgba(255,255,255,0.02)', borderRadius: '8px'
                       }}>
-                        {inf.image ? (
-                          <img src={inf.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                          <span style={{ color: '#fff', fontWeight: '600', fontSize: '12px' }}>{inf.name?.charAt(0) || '?'}</span>
-                        )}
+                        <div style={{
+                          width: '32px', height: '32px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
+                          background: inf.image ? 'transparent' : `linear-gradient(135deg, hsl(${(i * 67) % 360}, 50%, 50%), hsl(${(i * 67 + 40) % 360}, 50%, 40%))`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>
+                          {inf.image ? (
+                            <img src={inf.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <span style={{ color: '#fff', fontWeight: '600', fontSize: '12px' }}>{inf.name?.charAt(0) || '?'}</span>
+                          )}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: '12px', fontWeight: '500', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{inf.name}</p>
+                          <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>
+                            {inf.clips} klip{inf.clips !== 1 ? 'a' : ''} • {formatNumber(inf.views)}
+                          </p>
+                        </div>
                       </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: '12px', fontWeight: '500', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {inf.name}
-                        </p>
-                        <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>
-                          {inf.clips} klip{inf.clips !== 1 ? 'a' : ''} • {formatNumber(inf.views)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                  {uniqueInfluencers.length > 8 && (
-                    <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: '4px' }}>
-                      +{uniqueInfluencers.length - 8} više
-                    </p>
+                    ))}
+                  </div>
+                  {uniqueInfluencers.length > 6 && (
+                    <div style={{
+                      position: 'absolute', bottom: 0, left: 0, right: 0, height: '50px',
+                      background: 'linear-gradient(to top, rgba(15, 15, 26, 1) 0%, rgba(15, 15, 26, 0) 100%)',
+                      pointerEvents: 'none'
+                    }} />
                   )}
                 </div>
               )}
@@ -601,21 +436,12 @@ export default function ClientDashboard() {
           </div>
 
           {/* Footer */}
-          <footer style={{
-            marginTop: '32px',
-            paddingTop: '16px',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
+          <footer style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)' }}>Powered by</span>
               <span style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.6)' }}>VOICE</span>
             </div>
-            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)' }}>
-              {new Date().toLocaleString('sr-RS')}
-            </p>
+            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)' }}>{new Date().toLocaleString('sr-RS')}</p>
           </footer>
         </main>
       </div>
