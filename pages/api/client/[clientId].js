@@ -52,7 +52,7 @@ export default async function handler(req, res) {
         meaning: record.fields['Meaning'] || '',
         contractStatus: record.fields['Contract Status'] || '',
         totalLikes: parseInt(record.fields['Number of Likes Achieved']) || 0,
-        totalComments: parseInt(record.fields['Number of Comments Achieved']) || 0,
+        totalComments: parseInt(record.fields['Number of Comment Achieved']) || 0,
         totalShares: parseInt(record.fields['Number of Shares Achieved']) || 0,
         totalSaves: parseInt(record.fields['Number of Saves Achieved']) || 0,
         publishedClips: parseInt(record.fields['Number of Published Clips']) || 0,
