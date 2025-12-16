@@ -530,6 +530,65 @@ export default function HODDashboard() {
       }}>
         
         {/* Header */}
+        <style>{`
+          .hod-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 14px 28px;
+          }
+          .hod-header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+          }
+          .hod-header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+          }
+          .hod-header-time {
+            font-size: 11px;
+            color: rgba(255,255,255,0.3);
+          }
+          .hod-refresh-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+          }
+          @media (max-width: 600px) {
+            .hod-header {
+              padding: 12px 16px;
+              flex-wrap: wrap;
+              gap: 12px;
+            }
+            .hod-header-left {
+              gap: 10px;
+            }
+            .hod-header-left h1 {
+              font-size: 14px !important;
+            }
+            .hod-header-left p {
+              display: none;
+            }
+            .hod-header-right {
+              gap: 10px;
+            }
+            .hod-header-time {
+              display: none;
+            }
+            .hod-refresh-btn {
+              padding: 6px 12px;
+              font-size: 11px;
+            }
+          }
+        `}</style>
         <header style={{
           background: 'rgba(15, 15, 26, 0.95)',
           backdropFilter: 'blur(20px)',
@@ -538,15 +597,8 @@ export default function HODDashboard() {
           top: 0,
           zIndex: 100
         }}>
-          <div style={{
-            maxWidth: '1600px',
-            margin: '0 auto',
-            padding: '14px 28px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div className="hod-header">
+            <div className="hod-header-left">
               <span style={{ fontSize: '24px', fontWeight: '700' }}>voice</span>
               <div style={{ height: '24px', width: '1px', background: 'rgba(255,255,255,0.1)' }} />
               <div>
@@ -554,68 +606,86 @@ export default function HODDashboard() {
                 <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: '2px 0 0' }}>Head of Delivery Overview</p>
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div className="hod-header-right">
               <LiveIndicator />
               {lastUpdated && (
-                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>
+                <span className="hod-header-time">
                   Ažurirano: {lastUpdated.toLocaleTimeString('sr-RS')}
                 </span>
               )}
-              <button
-                onClick={fetchData}
-                style={{
-                  padding: '8px 16px',
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                  color: '#fff',
-                  fontSize: '12px',
-                  cursor: 'pointer'
-                }}
-              >
+              <button onClick={fetchData} className="hod-refresh-btn">
                 🔄 Osveži
               </button>
             </div>
           </div>
         </header>
 
-        <main style={{ maxWidth: '1600px', margin: '0 auto', padding: '28px' }}>
+        <main className="hod-main" style={{ maxWidth: '1600px', margin: '0 auto', padding: '28px' }}>
+          <style>{`
+            @media (max-width: 600px) {
+              .hod-main {
+                padding: 16px !important;
+              }
+            }
+          `}</style>
           
           {/* Info Bar - Just displays data, not clickable */}
-          <section style={{
-            display: 'flex',
-            gap: '16px',
-            marginBottom: '20px',
-            flexWrap: 'wrap'
-          }}>
-            <div style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: '12px',
-              padding: '16px 24px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px'
-            }}>
-              <span style={{ fontSize: '24px' }}>🎯</span>
+          <style>{`
+            .info-bar {
+              display: flex;
+              gap: 12px;
+              margin-bottom: 20px;
+            }
+            .info-card {
+              background: rgba(255,255,255,0.03);
+              border: 1px solid rgba(255,255,255,0.06);
+              border-radius: 12px;
+              padding: 16px 24px;
+              display: flex;
+              align-items: center;
+              gap: 12px;
+            }
+            .info-card-number {
+              font-size: 28px;
+              font-weight: 800;
+              margin: 0;
+            }
+            @media (max-width: 600px) {
+              .info-bar {
+                flex-direction: row;
+                gap: 8px;
+              }
+              .info-card {
+                flex: 1;
+                padding: 12px 14px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+              }
+              .info-card-number {
+                font-size: 22px;
+              }
+              .info-card .emoji {
+                font-size: 18px !important;
+              }
+              .info-card .label {
+                font-size: 9px !important;
+              }
+            }
+          `}</style>
+          <section className="info-bar">
+            <div className="info-card">
+              <span className="emoji" style={{ fontSize: '24px' }}>🎯</span>
               <div>
-                <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: 0, textTransform: 'uppercase' }}>Aktivne kampanje</p>
-                <p style={{ fontSize: '28px', fontWeight: '800', margin: 0, color: '#fff' }}>{stats.total || 0}</p>
+                <p className="label" style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: 0, textTransform: 'uppercase' }}>Aktivne kampanje</p>
+                <p className="info-card-number" style={{ color: '#fff' }}>{stats.total || 0}</p>
               </div>
             </div>
-            <div style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: '12px',
-              padding: '16px 24px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px'
-            }}>
-              <span style={{ fontSize: '24px' }}>📊</span>
+            <div className="info-card">
+              <span className="emoji" style={{ fontSize: '24px' }}>📊</span>
               <div>
-                <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: 0, textTransform: 'uppercase' }}>Prosečan delivery</p>
-                <p style={{ fontSize: '28px', fontWeight: '800', margin: 0, color: stats.avgDelivery >= 80 ? '#4ade80' : stats.avgDelivery >= 50 ? '#fbbf24' : '#f87171' }}>
+                <p className="label" style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: 0, textTransform: 'uppercase' }}>Prosečan delivery</p>
+                <p className="info-card-number" style={{ color: stats.avgDelivery >= 80 ? '#4ade80' : stats.avgDelivery >= 50 ? '#fbbf24' : '#f87171' }}>
                   {formatPercent(stats.avgDelivery)}
                 </p>
               </div>
@@ -643,6 +713,28 @@ export default function HODDashboard() {
             .action-btn:active {
               transform: translateY(-2px);
             }
+            .action-btn .btn-emoji {
+              font-size: 32px;
+              margin-bottom: 8px;
+            }
+            .action-btn .btn-number {
+              font-size: 36px;
+              font-weight: 800;
+              margin: 0 0 4px;
+              color: #fff;
+            }
+            .action-btn .btn-label {
+              font-size: 12px;
+              font-weight: 600;
+              margin: 0;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            .action-btn .btn-sub {
+              font-size: 10px;
+              color: rgba(255,255,255,0.5);
+              margin: 4px 0 0;
+            }
             .action-grid {
               display: grid;
               grid-template-columns: repeat(4, 1fr);
@@ -650,11 +742,34 @@ export default function HODDashboard() {
               margin-bottom: 28px;
             }
             @media (max-width: 800px) {
-              .action-grid { grid-template-columns: repeat(2, 1fr); }
+              .action-grid { 
+                grid-template-columns: repeat(2, 1fr); 
+                gap: 10px;
+              }
             }
-            @media (max-width: 450px) {
-              .action-grid { grid-template-columns: repeat(2, 1fr); }
-              .action-btn { min-height: 100px; padding: 16px 12px; }
+            @media (max-width: 500px) {
+              .action-grid { 
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+              }
+              .action-btn { 
+                min-height: 90px; 
+                padding: 16px 10px;
+                border-radius: 12px;
+              }
+              .action-btn .btn-emoji {
+                font-size: 24px;
+                margin-bottom: 6px;
+              }
+              .action-btn .btn-number {
+                font-size: 28px;
+              }
+              .action-btn .btn-label {
+                font-size: 10px;
+              }
+              .action-btn .btn-sub {
+                font-size: 9px;
+              }
             }
           `}</style>
           <section className="action-grid">
@@ -667,10 +782,10 @@ export default function HODDashboard() {
                 boxShadow: '0 4px 20px rgba(239, 68, 68, 0.15)'
               }}
             >
-              <span style={{ fontSize: '32px', marginBottom: '8px' }}>🚨</span>
-              <p style={{ fontSize: '36px', fontWeight: '800', margin: '0 0 4px', color: '#fff' }}>{stats.critical || 0}</p>
-              <p style={{ fontSize: '12px', fontWeight: '600', margin: 0, color: '#f87171', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Kritično</p>
-              {stats.critical > 0 && <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', margin: '4px 0 0' }}>Potrebna akcija!</p>}
+              <span className="btn-emoji">🚨</span>
+              <p className="btn-number">{stats.critical || 0}</p>
+              <p className="btn-label" style={{ color: '#f87171' }}>Kritično</p>
+              {stats.critical > 0 && <p className="btn-sub">Potrebna akcija!</p>}
             </div>
 
             <div 
@@ -682,9 +797,9 @@ export default function HODDashboard() {
                 boxShadow: '0 4px 20px rgba(249, 115, 22, 0.15)'
               }}
             >
-              <span style={{ fontSize: '32px', marginBottom: '8px' }}>⚠️</span>
-              <p style={{ fontSize: '36px', fontWeight: '800', margin: '0 0 4px', color: '#fff' }}>{stats.behind || 0}</p>
-              <p style={{ fontSize: '12px', fontWeight: '600', margin: 0, color: '#fb923c', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Kasni</p>
+              <span className="btn-emoji">⚠️</span>
+              <p className="btn-number">{stats.behind || 0}</p>
+              <p className="btn-label" style={{ color: '#fb923c' }}>Kasni</p>
             </div>
 
             <div 
@@ -696,9 +811,9 @@ export default function HODDashboard() {
                 boxShadow: '0 4px 20px rgba(234, 179, 8, 0.15)'
               }}
             >
-              <span style={{ fontSize: '32px', marginBottom: '8px' }}>👀</span>
-              <p style={{ fontSize: '36px', fontWeight: '800', margin: '0 0 4px', color: '#fff' }}>{stats.watch || 0}</p>
-              <p style={{ fontSize: '12px', fontWeight: '600', margin: 0, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Prati</p>
+              <span className="btn-emoji">👀</span>
+              <p className="btn-number">{stats.watch || 0}</p>
+              <p className="btn-label" style={{ color: '#fbbf24' }}>Prati</p>
             </div>
 
             <div 
@@ -710,20 +825,67 @@ export default function HODDashboard() {
                 boxShadow: '0 4px 20px rgba(34, 197, 94, 0.15)'
               }}
             >
-              <span style={{ fontSize: '32px', marginBottom: '8px' }}>✅</span>
-              <p style={{ fontSize: '36px', fontWeight: '800', margin: '0 0 4px', color: '#fff' }}>{(stats.ok || 0) + (stats.done || 0)}</p>
-              <p style={{ fontSize: '12px', fontWeight: '600', margin: 0, color: '#4ade80', textTransform: 'uppercase', letterSpacing: '0.5px' }}>OK / Done</p>
+              <span className="btn-emoji">✅</span>
+              <p className="btn-number">{(stats.ok || 0) + (stats.done || 0)}</p>
+              <p className="btn-label" style={{ color: '#4ade80' }}>OK / Done</p>
             </div>
           </section>
 
           {/* Tabs */}
-          <div style={{
-            display: 'flex',
-            gap: '8px',
-            marginBottom: '24px',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
-            paddingBottom: '16px'
-          }}>
+          <style>{`
+            .hod-tabs {
+              display: flex;
+              gap: 8px;
+              margin-bottom: 24px;
+              border-bottom: 1px solid rgba(255,255,255,0.06);
+              padding-bottom: 16px;
+              overflow-x: auto;
+              -webkit-overflow-scrolling: touch;
+            }
+            .hod-tab {
+              padding: 10px 20px;
+              background: transparent;
+              border: 1px solid transparent;
+              border-radius: 10px;
+              color: rgba(255,255,255,0.5);
+              font-size: 13px;
+              font-weight: 600;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              white-space: nowrap;
+              flex-shrink: 0;
+            }
+            .hod-tab.active {
+              background: rgba(129, 140, 248, 0.15);
+              border-color: rgba(129, 140, 248, 0.3);
+              color: #fff;
+            }
+            .hod-tab-count {
+              background: rgba(255,255,255,0.1);
+              padding: 2px 8px;
+              border-radius: 100px;
+              font-size: 11px;
+            }
+            @media (max-width: 600px) {
+              .hod-tabs {
+                gap: 6px;
+                margin-bottom: 16px;
+                padding-bottom: 12px;
+              }
+              .hod-tab {
+                padding: 8px 14px;
+                font-size: 12px;
+                gap: 6px;
+              }
+              .hod-tab-count {
+                padding: 2px 6px;
+                font-size: 10px;
+              }
+            }
+          `}</style>
+          <div className="hod-tabs">
             {[
               { id: 'critical', label: '🔥 Kritično', count: criticalCampaigns.length },
               { id: 'clients', label: '🏢 Po Klijentu', count: data?.clientStats?.length || 0 },
@@ -732,29 +894,10 @@ export default function HODDashboard() {
               <button
                 key={tab.id}
                 onClick={() => { setActiveTab(tab.id); setSelectedClient(null); setStatusFilter('all'); }}
-                style={{
-                  padding: '10px 20px',
-                  background: activeTab === tab.id ? 'rgba(129, 140, 248, 0.15)' : 'transparent',
-                  border: `1px solid ${activeTab === tab.id ? 'rgba(129, 140, 248, 0.3)' : 'transparent'}`,
-                  borderRadius: '10px',
-                  color: activeTab === tab.id ? '#fff' : 'rgba(255,255,255,0.5)',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
+                className={`hod-tab ${activeTab === tab.id ? 'active' : ''}`}
               >
                 {tab.label}
-                <span style={{
-                  background: 'rgba(255,255,255,0.1)',
-                  padding: '2px 8px',
-                  borderRadius: '100px',
-                  fontSize: '11px'
-                }}>
-                  {tab.count}
-                </span>
+                <span className="hod-tab-count">{tab.count}</span>
               </button>
             ))}
           </div>
@@ -779,11 +922,20 @@ export default function HODDashboard() {
                   </p>
                 </div>
               ) : (
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
-                  gap: '20px'
-                }}>
+                <style>{`
+                  .critical-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+                    gap: 20px;
+                  }
+                  @media (max-width: 600px) {
+                    .critical-grid {
+                      grid-template-columns: 1fr;
+                      gap: 12px;
+                    }
+                  }
+                `}</style>
+                <div className="critical-grid">
                   {criticalCampaigns.map(campaign => (
                     <CriticalAlertCard
                       key={campaign.id}
@@ -799,11 +951,20 @@ export default function HODDashboard() {
           {/* Clients Tab */}
           {activeTab === 'clients' && !selectedClient && (
             <section>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                gap: '20px'
-              }}>
+              <style>{`
+                .clients-grid {
+                  display: grid;
+                  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                  gap: 20px;
+                }
+                @media (max-width: 600px) {
+                  .clients-grid {
+                    grid-template-columns: 1fr;
+                    gap: 12px;
+                  }
+                }
+              `}</style>
+              <div className="clients-grid">
                 {(data?.clientStats || []).map((clientData, i) => (
                   <ClientCard
                     key={i}
