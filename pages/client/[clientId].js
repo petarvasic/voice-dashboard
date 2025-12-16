@@ -1,4 +1,4 @@
-// pages/client/[clientId].js - V8 PREMIUM
+// pages/client/[clientId].js - V9 PREMIUM with Charts
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -15,6 +15,11 @@ const formatDate = (dateStr) => {
   if (!dateStr) return '';
   const date = new Date(dateStr);
   return date.toLocaleDateString('sr-RS', { day: 'numeric', month: 'short' });
+};
+
+const formatPercent = (num) => {
+  if (!num || isNaN(num)) return '0%';
+  return num.toFixed(2) + '%';
 };
 
 // VOICE Logo
@@ -59,143 +64,210 @@ const StatusBadge = ({ status }) => {
   const style = getStatusStyle();
   return (
     <span style={{
-      display: 'inline-block',
-      padding: '4px 10px',
-      borderRadius: '6px',
-      fontSize: '10px',
-      fontWeight: '600',
-      background: style.bg,
-      color: style.color,
-      textTransform: 'uppercase',
-      letterSpacing: '0.5px'
+      display: 'inline-block', padding: '4px 10px', borderRadius: '6px',
+      fontSize: '10px', fontWeight: '600', background: style.bg, color: style.color,
+      textTransform: 'uppercase', letterSpacing: '0.5px'
     }}>
       {status}
     </span>
   );
 };
 
-// Metric Detail Modal with Heat Map
-const MetricModal = ({ isOpen, onClose, title, months, metricKey, color }) => {
-  if (!isOpen || !months) return null;
-
-  const values = months.map(m => ({
-    month: m.month,
-    value: m[metricKey] || 0
-  })).sort((a, b) => b.value - a.value);
-
-  const maxValue = Math.max(...values.map(v => v.value), 1);
+// Simple Donut Chart Component
+const DonutChart = ({ data, size = 160, strokeWidth = 24 }) => {
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+  if (total === 0) return null;
+  
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  let currentAngle = 0;
 
   return (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0, 0, 0, 0.85)',
-      backdropFilter: 'blur(12px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 1000, padding: '20px'
-    }} onClick={onClose}>
+    <div style={{ position: 'relative', width: size, height: size }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+        {data.map((segment, i) => {
+          const percent = segment.value / total;
+          const dashLength = circumference * percent;
+          const dashOffset = circumference * currentAngle;
+          currentAngle += percent;
+          
+          return (
+            <circle
+              key={i}
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="none"
+              stroke={segment.color}
+              strokeWidth={strokeWidth}
+              strokeDasharray={`${dashLength} ${circumference - dashLength}`}
+              strokeDashoffset={-dashOffset}
+              style={{ transition: 'all 0.5s ease' }}
+            />
+          );
+        })}
+      </svg>
       <div style={{
-        background: 'linear-gradient(180deg, #1e1e38 0%, #18182d 100%)',
-        borderRadius: '24px',
-        padding: '32px',
-        maxWidth: '480px',
-        width: '100%',
-        border: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: '0 30px 60px rgba(0,0,0,0.5)',
-        position: 'relative'
-      }} onClick={e => e.stopPropagation()}>
-        
-        <div style={{ marginBottom: '28px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: '700', margin: '0 0 6px', color: '#fff' }}>
-            {title} po mesecima
-          </h2>
-          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>
-            Ukupno: <span style={{ color: '#fff', fontWeight: '600' }}>{formatNumber(values.reduce((sum, v) => sum + v.value, 0))}</span>
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {values.map((item, i) => {
-            const intensity = item.value / maxValue;
-            const bgOpacity = 0.08 + (intensity * 0.35);
-            const textOpacity = 0.4 + (intensity * 0.6);
-            
-            return (
-              <div key={i} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '16px 18px',
-                background: `rgba(${color}, ${bgOpacity})`,
-                borderRadius: '12px',
-                borderLeft: `3px solid rgba(${color}, ${0.3 + intensity * 0.7})`
-              }}>
-                <span style={{ fontSize: '14px', fontWeight: '500', color: `rgba(255,255,255,${textOpacity})` }}>
-                  {item.month}
-                </span>
-                <span style={{ fontSize: '18px', fontWeight: '700', color: `rgba(255,255,255,${textOpacity})` }}>
-                  {formatNumber(item.value)}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        <button onClick={onClose} style={{
-          position: 'absolute', top: '20px', right: '20px',
-          background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%',
-          width: '36px', height: '36px', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'rgba(255,255,255,0.5)', transition: 'all 0.2s ease'
-        }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M18 6L6 18M6 6l12 12"/>
-          </svg>
-        </button>
+        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+        textAlign: 'center'
+      }}>
+        <p style={{ fontSize: '20px', fontWeight: '700', margin: 0, color: '#fff' }}>{formatNumber(total)}</p>
+        <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>ukupno</p>
       </div>
     </div>
   );
 };
 
-// Interactive Metric Card
-const MetricCard = ({ icon, label, value, onClick, colorRgb, subtext }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  
+// Horizontal Bar Chart
+const HorizontalBarChart = ({ data, maxValue, color = '#818cf8' }) => {
   return (
-    <div 
-      onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{
-        padding: '20px',
-        borderRadius: '16px',
-        cursor: 'pointer',
-        background: isHovered ? `rgba(${colorRgb}, 0.12)` : 'rgba(255,255,255,0.03)',
-        border: isHovered ? `1px solid rgba(${colorRgb}, 0.3)` : '1px solid rgba(255,255,255,0.06)',
-        transform: isHovered ? 'translateY(-3px)' : 'translateY(0)',
-        boxShadow: isHovered ? `0 12px 32px rgba(${colorRgb}, 0.15)` : 'none',
-        transition: 'all 0.25s ease'
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-        <span style={{ fontSize: '22px' }}>{icon}</span>
-        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          {label}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {data.map((item, i) => {
+        const percent = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
+        return (
+          <div key={i}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', fontWeight: '500' }}>{item.label}</span>
+              <span style={{ fontSize: '12px', color: '#fff', fontWeight: '600' }}>{formatNumber(item.value)}</span>
+            </div>
+            <div style={{ height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', width: `${percent}%`,
+                background: `linear-gradient(90deg, ${color} 0%, ${color}88 100%)`,
+                borderRadius: '4px', transition: 'width 0.5s ease'
+              }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// Mini Line Chart (sparkline)
+const SparklineChart = ({ data, color = '#818cf8', height = 60 }) => {
+  if (!data || data.length < 2) return null;
+  
+  const max = Math.max(...data.map(d => d.value));
+  const min = Math.min(...data.map(d => d.value));
+  const range = max - min || 1;
+  
+  const width = 200;
+  const points = data.map((d, i) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - ((d.value - min) / range) * (height - 10) - 5;
+    return `${x},${y}`;
+  }).join(' ');
+
+  return (
+    <svg width={width} height={height} style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id="sparklineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polyline
+        points={points}
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {data.map((d, i) => {
+        const x = (i / (data.length - 1)) * width;
+        const y = height - ((d.value - min) / range) * (height - 10) - 5;
+        return (
+          <circle key={i} cx={x} cy={y} r="3" fill={color} />
+        );
+      })}
+    </svg>
+  );
+};
+
+// Stat Card with trend
+const StatCard = ({ icon, label, value, subtext, trend, colorRgb }) => (
+  <div style={{
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid rgba(255,255,255,0.06)',
+    borderRadius: '16px',
+    padding: '20px'
+  }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+      <span style={{ fontSize: '18px' }}>{icon}</span>
+      <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        {label}
+      </span>
+    </div>
+    <p style={{ fontSize: '28px', fontWeight: '700', margin: '0 0 4px', color: '#fff' }}>{value}</p>
+    {subtext && <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>{subtext}</p>}
+    {trend !== undefined && (
+      <div style={{ 
+        marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '4px',
+        background: trend >= 0 ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+        padding: '4px 8px', borderRadius: '6px'
+      }}>
+        <span style={{ color: trend >= 0 ? '#4ade80' : '#f87171', fontSize: '11px', fontWeight: '600' }}>
+          {trend >= 0 ? '↑' : '↓'} {Math.abs(trend).toFixed(1)}%
         </span>
       </div>
-      <p style={{ fontSize: '28px', fontWeight: '700', margin: '0 0 4px', color: isHovered ? '#fff' : 'rgba(255,255,255,0.95)' }}>
-        {value}
-      </p>
-      {subtext && (
-        <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: 0 }}>{subtext}</p>
-      )}
-      {isHovered && (
-        <p style={{ fontSize: '10px', color: `rgba(${colorRgb}, 0.9)`, margin: '10px 0 0', fontWeight: '500' }}>
-          Klikni za detalje →
-        </p>
-      )}
-    </div>
-  );
-};
+    )}
+  </div>
+);
 
-// WhatsApp Boost Modal - FANCY
+// Highlight Card
+const HighlightCard = ({ icon, title, name, value, subtext, image, colorRgb }) => (
+  <div style={{
+    background: `linear-gradient(135deg, rgba(${colorRgb}, 0.12) 0%, rgba(${colorRgb}, 0.05) 100%)`,
+    border: `1px solid rgba(${colorRgb}, 0.2)`,
+    borderRadius: '16px',
+    padding: '18px',
+    flex: 1, minWidth: '200px'
+  }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
+      <span style={{ fontSize: '14px' }}>{icon}</span>
+      <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        {title}
+      </span>
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      {image !== undefined && (
+        <div style={{
+          width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
+          background: image ? 'transparent' : `linear-gradient(135deg, rgba(${colorRgb}, 0.6) 0%, rgba(${colorRgb}, 0.3) 100%)`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: `2px solid rgba(${colorRgb}, 0.3)`
+        }}>
+          {image ? (
+            <img src={image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <span style={{ color: '#fff', fontWeight: '700', fontSize: '16px' }}>{name?.charAt(0) || '?'}</span>
+          )}
+        </div>
+      )}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: '13px', fontWeight: '600', margin: '0 0 2px', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</p>
+        <p style={{ fontSize: '16px', fontWeight: '700', margin: 0, color: `rgb(${colorRgb})` }}>
+          {value} {subtext && <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: '400' }}>{subtext}</span>}
+        </p>
+      </div>
+    </div>
+  </div>
+);
+
+// Section Header
+const SectionHeader = ({ icon, title, subtitle }) => (
+  <div style={{ marginBottom: '16px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <span style={{ fontSize: '18px' }}>{icon}</span>
+      <h2 style={{ fontSize: '16px', fontWeight: '700', margin: 0, color: '#fff' }}>{title}</h2>
+    </div>
+    {subtitle && <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: '4px 0 0 26px' }}>{subtitle}</p>}
+  </div>
+);
+
+// WhatsApp Boost Modal
 const BoostModal = ({ isOpen, onClose, clientName }) => {
   if (!isOpen) return null;
 
@@ -227,28 +299,21 @@ Molim vas za potvrdu i dalje korake. Hvala! 🙏`
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0, 0, 0, 0.9)',
-      backdropFilter: 'blur(16px)',
+      background: 'rgba(0, 0, 0, 0.9)', backdropFilter: 'blur(16px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 1000, padding: '20px'
     }} onClick={onClose}>
       <div style={{
         background: 'linear-gradient(180deg, #1a1a2e 0%, #141428 100%)',
-        borderRadius: '28px',
-        padding: '40px',
-        maxWidth: '520px',
-        width: '100%',
-        border: '1px solid rgba(255,255,255,0.1)',
-        boxShadow: '0 40px 80px rgba(0,0,0,0.6)',
+        borderRadius: '28px', padding: '40px', maxWidth: '520px', width: '100%',
+        border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 40px 80px rgba(0,0,0,0.6)',
         position: 'relative'
       }} onClick={e => e.stopPropagation()}>
         
-        {/* Header with Teodora */}
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
           <div style={{
             width: '90px', height: '90px', borderRadius: '50%', overflow: 'hidden',
-            margin: '0 auto 20px',
-            border: '3px solid rgba(37, 211, 102, 0.4)',
+            margin: '0 auto 20px', border: '3px solid rgba(37, 211, 102, 0.4)',
             boxShadow: '0 0 30px rgba(37, 211, 102, 0.25)',
             background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center'
@@ -273,233 +338,39 @@ Molim vas za potvrdu i dalje korake. Hvala! 🙏`
           </div>
         </div>
 
-        {/* Packages */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', marginBottom: '28px' }}>
           {packages.map((pkg, i) => (
-            <div
-              key={i}
-              onClick={() => handleSelect(pkg)}
-              style={{
-                background: pkg.popular 
-                  ? 'linear-gradient(135deg, rgba(129, 140, 248, 0.2) 0%, rgba(167, 139, 250, 0.15) 100%)'
-                  : 'rgba(255,255,255,0.03)',
-                border: pkg.popular ? '2px solid rgba(129, 140, 248, 0.5)' : '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '16px',
-                padding: '24px 16px',
-                textAlign: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.25s ease',
-                position: 'relative'
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 16px 40px rgba(129, 140, 248, 0.2)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
+            <div key={i} onClick={() => handleSelect(pkg)} style={{
+              background: pkg.popular ? 'linear-gradient(135deg, rgba(129, 140, 248, 0.2) 0%, rgba(167, 139, 250, 0.15) 100%)' : 'rgba(255,255,255,0.03)',
+              border: pkg.popular ? '2px solid rgba(129, 140, 248, 0.5)' : '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '16px', padding: '24px 16px', textAlign: 'center', cursor: 'pointer',
+              transition: 'all 0.25s ease', position: 'relative'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 16px 40px rgba(129, 140, 248, 0.2)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
             >
               {pkg.popular && (
                 <div style={{
                   position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)',
                   background: 'linear-gradient(135deg, #818cf8 0%, #a78bfa 100%)',
                   padding: '4px 14px', borderRadius: '100px',
-                  fontSize: '10px', fontWeight: '700', color: '#fff',
-                  textTransform: 'uppercase', letterSpacing: '0.5px'
-                }}>
-                  Popularno
-                </div>
+                  fontSize: '10px', fontWeight: '700', color: '#fff', textTransform: 'uppercase'
+                }}>Popularno</div>
               )}
-              <p style={{ fontSize: '36px', fontWeight: '800', margin: '0 0 4px', color: '#fff' }}>
-                {pkg.views}
-              </p>
-              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: '0 0 16px' }}>
-                pregleda
-              </p>
-              <p style={{ fontSize: '22px', fontWeight: '700', margin: 0, color: pkg.popular ? '#a78bfa' : '#818cf8' }}>
-                €{pkg.price}
-              </p>
+              <p style={{ fontSize: '36px', fontWeight: '800', margin: '0 0 4px', color: '#fff' }}>{pkg.views}</p>
+              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: '0 0 16px' }}>pregleda</p>
+              <p style={{ fontSize: '22px', fontWeight: '700', margin: 0, color: pkg.popular ? '#a78bfa' : '#818cf8' }}>€{pkg.price}</p>
             </div>
           ))}
         </div>
-
-        <p style={{ textAlign: 'center', fontSize: '12px', color: 'rgba(255,255,255,0.3)' }}>
-          Klikom na paket otvara se WhatsApp sa pripremljenom porukom
-        </p>
 
         <button onClick={onClose} style={{
           position: 'absolute', top: '20px', right: '20px',
           background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%',
           width: '40px', height: '40px', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'rgba(255,255,255,0.5)'
+          display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.5)'
         }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M18 6L6 18M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-  );
-};
-
-// Top Performer Card
-const TopPerformerCard = ({ title, icon, name, value, label, image, colorRgb }) => (
-  <div style={{
-    background: `linear-gradient(135deg, rgba(${colorRgb}, 0.1) 0%, rgba(${colorRgb}, 0.05) 100%)`,
-    border: `1px solid rgba(${colorRgb}, 0.15)`,
-    borderRadius: '16px',
-    padding: '20px',
-    flex: 1
-  }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '14px' }}>
-      <span style={{ fontSize: '16px' }}>{icon}</span>
-      <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-        {title}
-      </span>
-    </div>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-      <div style={{
-        width: '48px', height: '48px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
-        background: image ? 'transparent' : `linear-gradient(135deg, rgba(${colorRgb}, 0.5) 0%, rgba(${colorRgb}, 0.3) 100%)`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        border: `2px solid rgba(${colorRgb}, 0.3)`
-      }}>
-        {image ? (
-          <img src={image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        ) : (
-          <span style={{ color: '#fff', fontWeight: '700', fontSize: '18px' }}>{name?.charAt(0) || '?'}</span>
-        )}
-      </div>
-      <div>
-        <p style={{ fontSize: '14px', fontWeight: '600', margin: '0 0 4px', color: '#fff' }}>{name}</p>
-        <p style={{ fontSize: '18px', fontWeight: '700', margin: 0, color: `rgb(${colorRgb})` }}>
-          {value} <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: '400' }}>{label}</span>
-        </p>
-      </div>
-    </div>
-  </div>
-);
-
-// Insights Modal
-const InsightsModal = ({ isOpen, onClose, clips, months, cumulative }) => {
-  if (!isOpen) return null;
-
-  // Calculate insights
-  const insights = useMemo(() => {
-    // Engagement rate
-    const engagementRate = cumulative.totalViews > 0 
-      ? ((cumulative.totalLikes + cumulative.totalShares) / cumulative.totalViews * 100).toFixed(2)
-      : 0;
-
-    // Platform split
-    const tiktokClips = clips.filter(c => c.platform === 'Tik Tok' || c.platform === 'TikTok');
-    const instaClips = clips.filter(c => c.platform === 'Instagram');
-    const tiktokViews = tiktokClips.reduce((sum, c) => sum + (c.views || 0), 0);
-    const instaViews = instaClips.reduce((sum, c) => sum + (c.views || 0), 0);
-    const totalPlatformViews = tiktokViews + instaViews;
-
-    // Avg views per clip
-    const avgViewsPerClip = clips.length > 0 
-      ? Math.round(cumulative.totalViews / clips.length) 
-      : 0;
-
-    // Avg views per month
-    const avgViewsPerMonth = months.length > 0 
-      ? Math.round(cumulative.totalViews / months.length) 
-      : 0;
-
-    // Best month
-    const bestMonth = months.length > 0 
-      ? months.reduce((best, m) => m.totalViews > best.totalViews ? m : best, months[0])
-      : null;
-
-    return {
-      engagementRate,
-      tiktokPercent: totalPlatformViews > 0 ? Math.round(tiktokViews / totalPlatformViews * 100) : 0,
-      instaPercent: totalPlatformViews > 0 ? Math.round(instaViews / totalPlatformViews * 100) : 0,
-      avgViewsPerClip,
-      avgViewsPerMonth,
-      bestMonth
-    };
-  }, [clips, months, cumulative]);
-
-  return (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0, 0, 0, 0.85)',
-      backdropFilter: 'blur(12px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 1000, padding: '20px'
-    }} onClick={onClose}>
-      <div style={{
-        background: 'linear-gradient(180deg, #1e1e38 0%, #18182d 100%)',
-        borderRadius: '24px',
-        padding: '36px',
-        maxWidth: '550px',
-        width: '100%',
-        border: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: '0 30px 60px rgba(0,0,0,0.5)',
-        position: 'relative'
-      }} onClick={e => e.stopPropagation()}>
-        
-        <h2 style={{ fontSize: '22px', fontWeight: '700', margin: '0 0 28px', color: '#fff' }}>
-          📊 Detaljni uvidi
-        </h2>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '14px', padding: '18px' }}>
-            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: '0 0 6px', textTransform: 'uppercase' }}>Engagement Rate</p>
-            <p style={{ fontSize: '28px', fontWeight: '700', margin: 0, color: '#4ade80' }}>{insights.engagementRate}%</p>
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '14px', padding: '18px' }}>
-            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: '0 0 6px', textTransform: 'uppercase' }}>Prosek po klipu</p>
-            <p style={{ fontSize: '28px', fontWeight: '700', margin: 0, color: '#818cf8' }}>{formatNumber(insights.avgViewsPerClip)}</p>
-          </div>
-        </div>
-
-        {/* Platform Split */}
-        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '14px', padding: '18px', marginBottom: '24px' }}>
-          <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: '0 0 14px', textTransform: 'uppercase' }}>Platforme</p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <PlatformIcon platform="TikTok" size={20} />
-              <span style={{ fontSize: '22px', fontWeight: '700', color: '#fff' }}>{insights.tiktokPercent}%</span>
-            </div>
-            <div style={{ flex: 1, height: '10px', background: 'rgba(255,255,255,0.1)', borderRadius: '100px', overflow: 'hidden' }}>
-              <div style={{ 
-                width: `${insights.tiktokPercent}%`, 
-                height: '100%', 
-                background: 'linear-gradient(90deg, #ff0050 0%, #00f2ea 100%)',
-                borderRadius: '100px'
-              }} />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '22px', fontWeight: '700', color: '#fff' }}>{insights.instaPercent}%</span>
-              <PlatformIcon platform="Instagram" size={20} />
-            </div>
-          </div>
-        </div>
-
-        {/* Best Month */}
-        {insights.bestMonth && (
-          <div style={{ background: 'linear-gradient(135deg, rgba(167, 139, 250, 0.15) 0%, rgba(129, 140, 248, 0.1) 100%)', borderRadius: '14px', padding: '18px', border: '1px solid rgba(167, 139, 250, 0.2)' }}>
-            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: '0 0 6px', textTransform: 'uppercase' }}>🏆 Najbolji mesec</p>
-            <p style={{ fontSize: '18px', fontWeight: '700', margin: 0, color: '#fff' }}>
-              {insights.bestMonth.month} <span style={{ color: '#a78bfa' }}>• {formatNumber(insights.bestMonth.totalViews)} pregleda</span>
-            </p>
-          </div>
-        )}
-
-        <button onClick={onClose} style={{
-          position: 'absolute', top: '20px', right: '20px',
-          background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%',
-          width: '36px', height: '36px', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'rgba(255,255,255,0.5)'
-        }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 6L6 18M6 6l12 12"/>
           </svg>
         </button>
@@ -520,8 +391,6 @@ export default function ClientDashboard() {
   const [clips, setClips] = useState([]);
   const [clipsLoading, setClipsLoading] = useState(false);
   const [boostModalOpen, setBoostModalOpen] = useState(false);
-  const [metricModal, setMetricModal] = useState({ isOpen: false, title: '', metricKey: '', color: '' });
-  const [insightsModalOpen, setInsightsModalOpen] = useState(false);
 
   useEffect(() => {
     if (!clientId) return;
@@ -562,34 +431,138 @@ export default function ClientDashboard() {
     fetchClips();
   }, [clientData, selectedMonthIndex]);
 
-  // Calculate analytics
+  // Calculate all analytics
   const analytics = useMemo(() => {
-    if (!clips.length) return { topClip: null, topInfluencer: null, uniqueInfluencers: [] };
-
-    // Top clip by views
-    const topClip = clips.reduce((best, c) => (c.views > (best?.views || 0)) ? c : best, null);
-
-    // Aggregate by influencer
+    const months = clientData?.months || [];
+    const cumulative = clientData?.cumulative || {};
+    
+    // Basic stats
+    const totalViews = cumulative.totalViews || 0;
+    const totalLikes = cumulative.totalLikes || 0;
+    const totalComments = cumulative.totalComments || 0;
+    const totalShares = cumulative.totalShares || 0;
+    const totalSaves = cumulative.totalSaves || 0;
+    const totalClips = cumulative.totalClips || clips.length;
+    
+    // Engagement Rate
+    const engagementRate = totalViews > 0 
+      ? ((totalLikes + totalComments + totalShares) / totalViews * 100)
+      : 0;
+    
+    // Viral Score (shares per 1000 views)
+    const viralScore = totalViews > 0 ? (totalShares / totalViews * 1000) : 0;
+    
+    // Save Rate
+    const saveRate = totalViews > 0 ? (totalSaves / totalViews * 100) : 0;
+    
+    // Avg views per clip
+    const avgViewsPerClip = totalClips > 0 ? Math.round(totalViews / totalClips) : 0;
+    
+    // Influencer stats from clips
     const influencerStats = {};
     clips.forEach(clip => {
       const name = clip.influencer || 'Unknown';
       if (!influencerStats[name]) {
-        influencerStats[name] = { name, views: 0, likes: 0, clips: 0, image: clip.influencerImage };
+        influencerStats[name] = { name, views: 0, likes: 0, comments: 0, shares: 0, saves: 0, clips: 0, image: clip.influencerImage };
       }
       influencerStats[name].views += clip.views || 0;
       influencerStats[name].likes += clip.likes || 0;
+      influencerStats[name].comments += clip.comments || 0;
+      influencerStats[name].shares += clip.shares || 0;
+      influencerStats[name].saves += clip.saves || 0;
       influencerStats[name].clips += 1;
     });
-
     const influencerList = Object.values(influencerStats).sort((a, b) => b.views - a.views);
-    const topInfluencer = influencerList[0] || null;
-
-    return { topClip, topInfluencer, uniqueInfluencers: influencerList };
-  }, [clips]);
-
-  const openMetricModal = (title, metricKey, colorRgb) => {
-    setMetricModal({ isOpen: true, title, metricKey, color: colorRgb });
-  };
+    const avgViewsPerInfluencer = influencerList.length > 0 
+      ? Math.round(clips.reduce((sum, c) => sum + (c.views || 0), 0) / influencerList.length)
+      : 0;
+    
+    // Top clips
+    const topClips = [...clips].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5);
+    const topClip = topClips[0] || null;
+    
+    // Most viral clip (highest share rate)
+    const clipsWithViralScore = clips.filter(c => c.views > 0).map(c => ({
+      ...c,
+      viralScore: (c.shares || 0) / c.views * 1000
+    }));
+    const mostViralClip = clipsWithViralScore.sort((a, b) => b.viralScore - a.viralScore)[0] || null;
+    
+    // Most saved clip
+    const mostSavedClip = [...clips].sort((a, b) => (b.saves || 0) - (a.saves || 0))[0] || null;
+    
+    // Platform split
+    const tiktokClips = clips.filter(c => c.platform === 'Tik Tok' || c.platform === 'TikTok');
+    const instaClips = clips.filter(c => c.platform === 'Instagram');
+    const tiktokViews = tiktokClips.reduce((sum, c) => sum + (c.views || 0), 0);
+    const instaViews = instaClips.reduce((sum, c) => sum + (c.views || 0), 0);
+    
+    // Best day of week
+    const dayStats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+    const dayNames = ['Nedelja', 'Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota'];
+    clips.forEach(c => {
+      if (c.publishDate) {
+        const day = new Date(c.publishDate).getDay();
+        dayStats[day] += c.views || 0;
+      }
+    });
+    const bestDayIndex = Object.entries(dayStats).sort((a, b) => b[1] - a[1])[0]?.[0] || 0;
+    const bestDay = dayNames[bestDayIndex];
+    
+    // Best month
+    const bestMonth = months.length > 0 
+      ? months.reduce((best, m) => (m.totalViews > (best?.totalViews || 0)) ? m : best, months[0])
+      : null;
+    
+    // Fastest growing month
+    let fastestGrowingMonth = null;
+    let maxGrowth = -Infinity;
+    for (let i = 1; i < months.length; i++) {
+      const prev = months[i].totalViews || 0; // months are sorted desc, so i is older
+      const curr = months[i-1].totalViews || 0;
+      if (prev > 0) {
+        const growth = ((curr - prev) / prev) * 100;
+        if (growth > maxGrowth) {
+          maxGrowth = growth;
+          fastestGrowingMonth = { month: months[i-1], growth };
+        }
+      }
+    }
+    
+    // Views trend data for sparkline
+    const viewsTrend = [...months].reverse().map(m => ({ month: m.month, value: m.totalViews || 0 }));
+    
+    // Engagement breakdown for donut
+    const engagementBreakdown = [
+      { name: 'Lajkovi', value: totalLikes, color: '#f472b6' },
+      { name: 'Komentari', value: totalComments, color: '#fbbf24' },
+      { name: 'Deljenja', value: totalShares, color: '#34d399' },
+      { name: 'Sačuvano', value: totalSaves, color: '#60a5fa' }
+    ].filter(d => d.value > 0);
+    
+    return {
+      engagementRate,
+      viralScore,
+      saveRate,
+      avgViewsPerClip,
+      avgViewsPerInfluencer,
+      influencerList,
+      topClips,
+      topClip,
+      mostViralClip,
+      mostSavedClip,
+      tiktokViews,
+      instaViews,
+      tiktokClips: tiktokClips.length,
+      instaClips: instaClips.length,
+      bestDay,
+      bestMonth,
+      fastestGrowingMonth,
+      viewsTrend,
+      engagementBreakdown,
+      totalEngagement: totalLikes + totalComments + totalShares + totalSaves
+    };
+  }, [clientData, clips]);
 
   if (loading) {
     return (
@@ -599,11 +572,8 @@ export default function ClientDashboard() {
       }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{
-            width: '50px', height: '50px',
-            border: '3px solid rgba(129, 140, 248, 0.2)',
-            borderTopColor: '#818cf8',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
+            width: '50px', height: '50px', border: '3px solid rgba(129, 140, 248, 0.2)',
+            borderTopColor: '#818cf8', borderRadius: '50%', animation: 'spin 1s linear infinite',
             margin: '0 auto 20px'
           }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -630,7 +600,7 @@ export default function ClientDashboard() {
   const selectedMonth = clientData?.months?.[selectedMonthIndex];
   const progressPercent = selectedMonth?.percentDelivered || 0;
   const cumulative = clientData?.cumulative || {};
-  const monthsCount = cumulative.monthsCount || 1;
+  const months = clientData?.months || [];
 
   return (
     <>
@@ -648,323 +618,340 @@ export default function ClientDashboard() {
         
         {/* Header */}
         <header style={{
-          background: 'rgba(15, 15, 26, 0.95)',
-          backdropFilter: 'blur(20px)',
+          background: 'rgba(15, 15, 26, 0.95)', backdropFilter: 'blur(20px)',
           borderBottom: '1px solid rgba(255,255,255,0.06)',
           position: 'sticky', top: 0, zIndex: 100
         }}>
           <div style={{
-            maxWidth: '1300px', margin: '0 auto', padding: '16px 28px',
+            maxWidth: '1400px', margin: '0 auto', padding: '16px 28px',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
               <VoiceLogo />
               <div style={{ height: '28px', width: '1px', background: 'rgba(255,255,255,0.1)' }} />
               <div>
-                <h1 style={{ fontSize: '20px', fontWeight: '700', margin: 0, letterSpacing: '-0.3px' }}>
-                  {clientData?.client?.name}
-                </h1>
+                <h1 style={{ fontSize: '20px', fontWeight: '700', margin: 0 }}>{clientData?.client?.name}</h1>
                 <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: '2px 0 0' }}>Campaign Dashboard</p>
               </div>
             </div>
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              {/* Boost Button */}
-              <button
-                onClick={() => setBoostModalOpen(true)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                  padding: '10px 18px',
-                  background: 'linear-gradient(135deg, #818cf8 0%, #a78bfa 100%)',
-                  border: 'none', borderRadius: '10px',
-                  color: '#fff', fontSize: '13px', fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: '0 4px 16px rgba(129, 140, 248, 0.25)'
-                }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-              >
-                <span>⚡</span>
-                Boost kampanju
-              </button>
-            </div>
+            <button onClick={() => setBoostModalOpen(true)} style={{
+              display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px',
+              background: 'linear-gradient(135deg, #818cf8 0%, #a78bfa 100%)',
+              border: 'none', borderRadius: '10px', color: '#fff', fontSize: '13px', fontWeight: '600',
+              cursor: 'pointer', boxShadow: '0 4px 16px rgba(129, 140, 248, 0.25)'
+            }}>
+              <span>⚡</span> Boost kampanju
+            </button>
           </div>
         </header>
 
         {/* Main Content */}
-        <main style={{ maxWidth: '1300px', margin: '0 auto', padding: '32px 28px' }}>
+        <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px 28px' }}>
           
-          {/* Hero Progress Section - Cumulative */}
-          {monthsCount > 1 && (
+          {/* Hero Section - Cumulative Progress */}
+          {months.length > 0 && (
             <section style={{
-              background: 'linear-gradient(135deg, rgba(129, 140, 248, 0.08) 0%, rgba(167, 139, 250, 0.05) 100%)',
+              background: 'linear-gradient(135deg, rgba(129, 140, 248, 0.1) 0%, rgba(167, 139, 250, 0.05) 100%)',
               border: '1px solid rgba(129, 140, 248, 0.15)',
-              borderRadius: '24px',
-              padding: '32px',
-              marginBottom: '28px'
+              borderRadius: '24px', padding: '32px', marginBottom: '24px'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '20px' }}>
                 <div>
                   <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    🎯 Celokupna kampanja ({monthsCount} meseci)
+                    🎯 Celokupna kampanja ({months.length} {months.length === 1 ? 'mesec' : 'meseci'})
                   </p>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
-                    <span style={{ fontSize: '52px', fontWeight: '800', letterSpacing: '-2px' }}>
-                      {formatNumber(cumulative.totalViews)}
-                    </span>
-                    <span style={{ fontSize: '18px', color: 'rgba(255,255,255,0.4)' }}>
-                      / {formatNumber(cumulative.totalGoal)} pregleda
-                    </span>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '48px', fontWeight: '800', letterSpacing: '-2px' }}>{formatNumber(cumulative.totalViews)}</span>
+                    <span style={{ fontSize: '18px', color: 'rgba(255,255,255,0.4)' }}>/ {formatNumber(cumulative.totalGoal)} pregleda</span>
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontSize: '40px', fontWeight: '800', margin: 0, color: cumulative.percentDelivered >= 1 ? '#4ade80' : '#818cf8' }}>
+                  <p style={{ fontSize: '38px', fontWeight: '800', margin: 0, color: cumulative.percentDelivered >= 1 ? '#4ade80' : '#818cf8' }}>
                     {(cumulative.percentDelivered * 100).toFixed(0)}%
                   </p>
                   <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: '4px 0 0' }}>isporučeno</p>
                 </div>
               </div>
               
-              {/* Progress Bar */}
-              <div style={{
-                height: '14px', background: 'rgba(255,255,255,0.08)',
-                borderRadius: '100px', overflow: 'hidden', marginBottom: '20px'
-              }}>
+              <div style={{ height: '12px', background: 'rgba(255,255,255,0.08)', borderRadius: '100px', overflow: 'hidden', marginBottom: '20px' }}>
                 <div style={{
-                  height: '100%',
-                  width: `${Math.min(cumulative.percentDelivered * 100, 100)}%`,
+                  height: '100%', width: `${Math.min(cumulative.percentDelivered * 100, 100)}%`,
                   background: cumulative.percentDelivered >= 1 
                     ? 'linear-gradient(90deg, #22c55e 0%, #4ade80 100%)' 
                     : 'linear-gradient(90deg, #818cf8 0%, #a78bfa 50%, #c4b5fd 100%)',
-                  borderRadius: '100px',
-                  transition: 'width 1s ease-out',
-                  boxShadow: '0 0 20px rgba(129, 140, 248, 0.4)'
+                  borderRadius: '100px', boxShadow: '0 0 20px rgba(129, 140, 248, 0.4)'
                 }} />
               </div>
 
-              {/* Quick Stats */}
-              <div style={{ display: 'flex', gap: '40px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <div>
-                  <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: '0 0 4px', textTransform: 'uppercase' }}>Ukupno klipova</p>
-                  <p style={{ fontSize: '20px', fontWeight: '700', margin: 0 }}>{cumulative.totalClips}</p>
-                </div>
-                <div>
-                  <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: '0 0 4px', textTransform: 'uppercase' }}>Ukupno lajkova</p>
-                  <p style={{ fontSize: '20px', fontWeight: '700', margin: 0 }}>{formatNumber(cumulative.totalLikes)}</p>
+                  <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: '0 0 4px', textTransform: 'uppercase' }}>Klipovi</p>
+                  <p style={{ fontSize: '18px', fontWeight: '700', margin: 0 }}>{cumulative.totalClips}</p>
                 </div>
                 <div>
-                  <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: '0 0 4px', textTransform: 'uppercase' }}>Ukupno deljenja</p>
-                  <p style={{ fontSize: '20px', fontWeight: '700', margin: 0 }}>{formatNumber(cumulative.totalShares)}</p>
+                  <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: '0 0 4px', textTransform: 'uppercase' }}>Lajkovi</p>
+                  <p style={{ fontSize: '18px', fontWeight: '700', margin: 0 }}>{formatNumber(cumulative.totalLikes)}</p>
                 </div>
-                <div style={{ marginLeft: 'auto' }}>
-                  <button
-                    onClick={() => setInsightsModalOpen(true)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '6px',
-                      background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '8px', padding: '8px 14px',
-                      color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '500',
-                      cursor: 'pointer', transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-                  >
-                    📊 Detaljni uvidi
-                  </button>
+                <div>
+                  <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: '0 0 4px', textTransform: 'uppercase' }}>Komentari</p>
+                  <p style={{ fontSize: '18px', fontWeight: '700', margin: 0 }}>{formatNumber(cumulative.totalComments)}</p>
                 </div>
+                <div>
+                  <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: '0 0 4px', textTransform: 'uppercase' }}>Deljenja</p>
+                  <p style={{ fontSize: '18px', fontWeight: '700', margin: 0 }}>{formatNumber(cumulative.totalShares)}</p>
+                </div>
+                {analytics.viewsTrend.length > 1 && (
+                  <div style={{ marginLeft: 'auto' }}>
+                    <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', margin: '0 0 4px', textTransform: 'uppercase' }}>Trend pregleda</p>
+                    <SparklineChart data={analytics.viewsTrend} color="#818cf8" height={40} />
+                  </div>
+                )}
               </div>
             </section>
           )}
 
-          {/* Month Selector Bar */}
+          {/* Month Selector */}
           <section style={{
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: '16px',
-            padding: '20px 24px',
-            marginBottom: '24px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: '20px',
-            flexWrap: 'wrap'
+            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: '16px', padding: '18px 24px', marginBottom: '24px',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px', flexWrap: 'wrap'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>Izaberi mesec:</span>
-              <select
-                value={selectedMonthIndex}
-                onChange={(e) => setSelectedMonthIndex(Number(e.target.value))}
-                style={{
-                  padding: '12px 40px 12px 16px',
-                  fontSize: '14px', fontWeight: '600',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  borderRadius: '10px',
-                  background: 'rgba(255,255,255,0.05)',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  appearance: 'none',
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 14px center',
-                  minWidth: '200px'
-                }}
-              >
-                {clientData?.months?.map((month, index) => (
-                  <option key={month.id} value={index} style={{ background: '#1a1a2e' }}>
-                    {month.month}
-                  </option>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>📅 Mesec:</span>
+              <select value={selectedMonthIndex} onChange={(e) => setSelectedMonthIndex(Number(e.target.value))} style={{
+                padding: '10px 36px 10px 14px', fontSize: '14px', fontWeight: '600',
+                border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px',
+                background: 'rgba(255,255,255,0.05)', color: '#fff', cursor: 'pointer',
+                appearance: 'none',
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center'
+              }}>
+                {months.map((month, index) => (
+                  <option key={month.id} value={index} style={{ background: '#1a1a2e' }}>{month.month}</option>
                 ))}
               </select>
             </div>
             
-            {/* Monthly Progress Mini */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <div style={{ textAlign: 'right' }}>
                 <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: '0 0 2px' }}>Ovaj mesec</p>
-                <p style={{ fontSize: '18px', fontWeight: '700', margin: 0 }}>
-                  {formatNumber(selectedMonth?.totalViews)} <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: '400' }}>/ {formatNumber(selectedMonth?.campaignGoal)}</span>
+                <p style={{ fontSize: '16px', fontWeight: '700', margin: 0 }}>
+                  {formatNumber(selectedMonth?.totalViews)} <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>/ {formatNumber(selectedMonth?.campaignGoal)}</span>
                 </p>
               </div>
-              <div style={{
-                width: '120px', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '100px', overflow: 'hidden'
-              }}>
-                <div style={{
-                  height: '100%',
-                  width: `${Math.min(progressPercent * 100, 100)}%`,
-                  background: progressPercent >= 1 ? '#4ade80' : '#818cf8',
-                  borderRadius: '100px'
-                }} />
+              <div style={{ width: '100px', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '100px', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${Math.min(progressPercent * 100, 100)}%`, background: progressPercent >= 1 ? '#4ade80' : '#818cf8', borderRadius: '100px' }} />
               </div>
-              <span style={{ 
-                fontSize: '14px', fontWeight: '700', 
-                color: progressPercent >= 1 ? '#4ade80' : '#818cf8' 
-              }}>
+              <span style={{ fontSize: '14px', fontWeight: '700', color: progressPercent >= 1 ? '#4ade80' : '#818cf8' }}>
                 {(progressPercent * 100).toFixed(0)}%
               </span>
               <StatusBadge status={selectedMonth?.contractStatus || 'Active'} />
             </div>
           </section>
 
-          {/* Top Performers Row */}
-          {analytics.topClip && (
-            <section style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
-              <TopPerformerCard 
-                title="🔥 Top klip"
-                icon="📹"
+          {/* Key Metrics Grid */}
+          <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+            <StatCard icon="📊" label="Engagement Rate" value={formatPercent(analytics.engagementRate)} subtext="interakcija / pregledi" />
+            <StatCard icon="🚀" label="Viral Score" value={analytics.viralScore.toFixed(1)} subtext="deljenja na 1K views" />
+            <StatCard icon="💾" label="Save Rate" value={formatPercent(analytics.saveRate)} subtext="sačuvano / pregledi" />
+            <StatCard icon="📹" label="Prosek po klipu" value={formatNumber(analytics.avgViewsPerClip)} subtext="pregleda" />
+            <StatCard icon="👤" label="Prosek po influenceru" value={formatNumber(analytics.avgViewsPerInfluencer)} subtext="pregleda" />
+            <StatCard icon="📆" label="Najbolji dan" value={analytics.bestDay} subtext="za objavljivanje" />
+          </section>
+
+          {/* Charts Row */}
+          <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+            
+            {/* Engagement Breakdown Donut */}
+            <div style={{
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: '20px', padding: '24px'
+            }}>
+              <SectionHeader icon="🎯" title="Engagement Breakdown" subtitle="Raspodela interakcija" />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', flexWrap: 'wrap', gap: '20px' }}>
+                <DonutChart data={analytics.engagementBreakdown} size={150} strokeWidth={22} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {analytics.engagementBreakdown.map((item, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: item.color }} />
+                      <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>{item.name}</span>
+                      <span style={{ fontSize: '13px', fontWeight: '600', color: '#fff', marginLeft: 'auto' }}>{formatNumber(item.value)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Platform Split */}
+            <div style={{
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: '20px', padding: '24px'
+            }}>
+              <SectionHeader icon="📱" title="Platform Split" subtitle="TikTok vs Instagram" />
+              <div style={{ marginTop: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <PlatformIcon platform="TikTok" size={20} />
+                    <span style={{ fontSize: '14px', fontWeight: '600' }}>TikTok</span>
+                  </div>
+                  <span style={{ fontSize: '14px', fontWeight: '700' }}>{formatNumber(analytics.tiktokViews)}</span>
+                </div>
+                <div style={{ height: '24px', background: 'rgba(255,255,255,0.1)', borderRadius: '12px', overflow: 'hidden', marginBottom: '20px' }}>
+                  {(analytics.tiktokViews + analytics.instaViews) > 0 && (
+                    <>
+                      <div style={{
+                        height: '100%', width: `${(analytics.tiktokViews / (analytics.tiktokViews + analytics.instaViews)) * 100}%`,
+                        background: 'linear-gradient(90deg, #ff0050 0%, #00f2ea 100%)',
+                        borderRadius: '12px', float: 'left'
+                      }} />
+                    </>
+                  )}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <PlatformIcon platform="Instagram" size={20} />
+                    <span style={{ fontSize: '14px', fontWeight: '600' }}>Instagram</span>
+                  </div>
+                  <span style={{ fontSize: '14px', fontWeight: '700' }}>{formatNumber(analytics.instaViews)}</span>
+                </div>
+                <div style={{ display: 'flex', gap: '20px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div>
+                    <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', margin: '0 0 2px' }}>TikTok klipovi</p>
+                    <p style={{ fontSize: '16px', fontWeight: '700', margin: 0 }}>{analytics.tiktokClips}</p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', margin: '0 0 2px' }}>Instagram klipovi</p>
+                    <p style={{ fontSize: '16px', fontWeight: '700', margin: 0 }}>{analytics.instaClips}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Top 5 Clips & Influencer Leaderboard */}
+          <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+            
+            {/* Top 5 Clips */}
+            <div style={{
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: '20px', padding: '24px'
+            }}>
+              <SectionHeader icon="🏆" title="Top 5 Klipova" subtitle="Najviše pregleda" />
+              {analytics.topClips.length > 0 ? (
+                <HorizontalBarChart 
+                  data={analytics.topClips.map(c => ({ label: c.influencer, value: c.views || 0 }))}
+                  maxValue={analytics.topClips[0]?.views || 0}
+                  color="#f472b6"
+                />
+              ) : (
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', textAlign: 'center', padding: '20px' }}>Nema podataka</p>
+              )}
+            </div>
+
+            {/* Influencer Leaderboard */}
+            <div style={{
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: '20px', padding: '24px'
+            }}>
+              <SectionHeader icon="👑" title="Influencer Leaderboard" subtitle="Ranking po pregledima" />
+              {analytics.influencerList.length > 0 ? (
+                <HorizontalBarChart 
+                  data={analytics.influencerList.slice(0, 5).map(inf => ({ label: inf.name, value: inf.views }))}
+                  maxValue={analytics.influencerList[0]?.views || 0}
+                  color="#818cf8"
+                />
+              ) : (
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', textAlign: 'center', padding: '20px' }}>Nema podataka</p>
+              )}
+            </div>
+          </section>
+
+          {/* Highlights Row */}
+          <section style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '24px' }}>
+            {analytics.topClip && (
+              <HighlightCard 
+                icon="🔥" title="Top Klip" 
                 name={analytics.topClip.influencer}
-                value={formatNumber(analytics.topClip.views)}
-                label="pregleda"
+                value={formatNumber(analytics.topClip.views)} subtext="pregleda"
                 image={analytics.topClip.influencerImage}
                 colorRgb="244, 114, 182"
               />
-              {analytics.topInfluencer && (
-                <TopPerformerCard 
-                  title="⭐ Best performer"
-                  icon="👑"
-                  name={analytics.topInfluencer.name}
-                  value={formatNumber(analytics.topInfluencer.views)}
-                  label={`(${analytics.topInfluencer.clips} klipova)`}
-                  image={analytics.topInfluencer.image}
-                  colorRgb="129, 140, 248"
-                />
-              )}
-            </section>
-          )}
-
-          {/* Metrics Grid */}
-          <section style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '16px',
-            marginBottom: '24px'
-          }}>
-            <MetricCard 
-              icon="👁️"
-              label="Pregledi"
-              value={formatNumber(selectedMonth?.totalViews)}
-              subtext="ovaj mesec"
-              colorRgb="129, 140, 248"
-              onClick={() => openMetricModal('Pregledi', 'totalViews', '129, 140, 248')}
-            />
-            <MetricCard 
-              icon="❤️"
-              label="Lajkovi"
-              value={formatNumber(selectedMonth?.totalLikes)}
-              subtext="ovaj mesec"
-              colorRgb="244, 114, 182"
-              onClick={() => openMetricModal('Lajkovi', 'totalLikes', '244, 114, 182')}
-            />
-            <MetricCard 
-              icon="💬"
-              label="Komentari"
-              value={formatNumber(selectedMonth?.totalComments)}
-              subtext="ovaj mesec"
-              colorRgb="251, 191, 36"
-              onClick={() => openMetricModal('Komentari', 'totalComments', '251, 191, 36')}
-            />
-            <MetricCard 
-              icon="🔄"
-              label="Deljenja"
-              value={formatNumber(selectedMonth?.totalShares)}
-              subtext="ovaj mesec"
-              colorRgb="52, 211, 153"
-              onClick={() => openMetricModal('Deljenja', 'totalShares', '52, 211, 153')}
-            />
+            )}
+            {analytics.influencerList[0] && (
+              <HighlightCard 
+                icon="⭐" title="MVP Influencer" 
+                name={analytics.influencerList[0].name}
+                value={formatNumber(analytics.influencerList[0].views)} subtext={`(${analytics.influencerList[0].clips} klipova)`}
+                image={analytics.influencerList[0].image}
+                colorRgb="129, 140, 248"
+              />
+            )}
+            {analytics.mostViralClip && (
+              <HighlightCard 
+                icon="🚀" title="Most Viral" 
+                name={analytics.mostViralClip.influencer}
+                value={analytics.mostViralClip.viralScore.toFixed(1)} subtext="viral score"
+                image={analytics.mostViralClip.influencerImage}
+                colorRgb="52, 211, 153"
+              />
+            )}
+            {analytics.mostSavedClip && analytics.mostSavedClip.saves > 0 && (
+              <HighlightCard 
+                icon="💾" title="Most Saved" 
+                name={analytics.mostSavedClip.influencer}
+                value={formatNumber(analytics.mostSavedClip.saves)} subtext="sačuvano"
+                image={analytics.mostSavedClip.influencerImage}
+                colorRgb="96, 165, 250"
+              />
+            )}
+            {analytics.bestMonth && (
+              <HighlightCard 
+                icon="📈" title="Best Month" 
+                name={analytics.bestMonth.month}
+                value={formatNumber(analytics.bestMonth.totalViews)} subtext="pregleda"
+                colorRgb="167, 139, 250"
+              />
+            )}
+            {analytics.fastestGrowingMonth && (
+              <HighlightCard 
+                icon="📊" title="Fastest Growth" 
+                name={analytics.fastestGrowingMonth.month.month}
+                value={`+${analytics.fastestGrowingMonth.growth.toFixed(0)}%`} subtext="rast"
+                colorRgb="251, 191, 36"
+              />
+            )}
           </section>
 
-          {/* Two Column: Clips + Influencers */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '20px' }}>
+          {/* Clips & Influencers Tables */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '20px', marginBottom: '24px' }}>
             
-            {/* Clips */}
+            {/* All Clips */}
             <section style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: '16px',
-              overflow: 'hidden',
-              position: 'relative'
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: '20px', overflow: 'hidden', position: 'relative'
             }}>
-              <div style={{ 
-                padding: '18px 24px', 
-                borderBottom: '1px solid rgba(255,255,255,0.06)', 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center' 
-              }}>
-                <h2 style={{ fontSize: '15px', fontWeight: '600', margin: 0 }}>📹 Objavljeni klipovi</h2>
-                <span style={{ 
-                  fontSize: '12px', color: 'rgba(255,255,255,0.4)', 
-                  background: 'rgba(255,255,255,0.05)', 
-                  padding: '4px 12px', borderRadius: '100px' 
-                }}>
+              <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h2 style={{ fontSize: '15px', fontWeight: '600', margin: 0 }}>📹 Svi klipovi</h2>
+                <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.05)', padding: '4px 12px', borderRadius: '100px' }}>
                   {clips.length} klipova
                 </span>
               </div>
               
               {clipsLoading ? (
-                <div style={{ padding: '50px', textAlign: 'center' }}>
-                  <p style={{ color: 'rgba(255,255,255,0.4)' }}>Učitavanje...</p>
-                </div>
+                <div style={{ padding: '50px', textAlign: 'center' }}><p style={{ color: 'rgba(255,255,255,0.4)' }}>Učitavanje...</p></div>
               ) : clips.length === 0 ? (
-                <div style={{ padding: '50px', textAlign: 'center' }}>
-                  <p style={{ color: 'rgba(255,255,255,0.4)' }}>Nema klipova za ovaj mesec</p>
-                </div>
+                <div style={{ padding: '50px', textAlign: 'center' }}><p style={{ color: 'rgba(255,255,255,0.4)' }}>Nema klipova</p></div>
               ) : (
                 <div style={{ position: 'relative' }}>
-                  <div style={{ maxHeight: '420px', overflowY: 'auto' }}>
+                  <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
                     {clips.map((clip, i) => (
-                      <div key={clip.id} style={{ 
-                        display: 'flex', alignItems: 'center', 
-                        padding: '14px 24px', 
-                        borderBottom: '1px solid rgba(255,255,255,0.04)', 
-                        gap: '14px',
-                        transition: 'background 0.2s ease'
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                      >
+                      <div key={clip.id} style={{
+                        display: 'flex', alignItems: 'center', padding: '14px 24px',
+                        borderBottom: '1px solid rgba(255,255,255,0.04)', gap: '14px'
+                      }}>
                         <div style={{
-                          width: '44px', height: '44px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
+                          width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
                           background: clip.influencerImage ? 'transparent' : `linear-gradient(135deg, hsl(${(i * 47) % 360}, 50%, 50%), hsl(${(i * 47 + 30) % 360}, 50%, 40%))`,
                           display: 'flex', alignItems: 'center', justifyContent: 'center'
                         }}>
@@ -981,32 +968,23 @@ export default function ClientDashboard() {
                             <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>{formatDate(clip.publishDate)}</span>
                           </div>
                         </div>
-                        <div style={{ textAlign: 'right', minWidth: '70px' }}>
-                          <p style={{ fontSize: '15px', fontWeight: '700', margin: 0 }}>{formatNumber(clip.views)}</p>
+                        <div style={{ textAlign: 'right', minWidth: '65px' }}>
+                          <p style={{ fontSize: '14px', fontWeight: '700', margin: 0 }}>{formatNumber(clip.views)}</p>
                           <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', margin: '2px 0 0' }}>pregleda</p>
                         </div>
                         <StatusBadge status={clip.status} />
                         {clip.link ? (
                           <a href={clip.link} target="_blank" rel="noopener noreferrer" style={{
-                            padding: '6px 12px', 
-                            background: 'rgba(129, 140, 248, 0.15)', 
-                            borderRadius: '8px',
-                            color: '#818cf8', textDecoration: 'none', 
-                            fontSize: '11px', fontWeight: '600',
-                            transition: 'all 0.2s ease'
-                          }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(129, 140, 248, 0.25)'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'rgba(129, 140, 248, 0.15)'}
-                          >
-                            Link ↗
-                          </a>
-                        ) : <span style={{ width: '50px' }} />}
+                            padding: '6px 12px', background: 'rgba(129, 140, 248, 0.15)', borderRadius: '8px',
+                            color: '#818cf8', textDecoration: 'none', fontSize: '11px', fontWeight: '600'
+                          }}>Link ↗</a>
+                        ) : <span style={{ width: '55px' }} />}
                       </div>
                     ))}
                   </div>
-                  {clips.length > 6 && (
+                  {clips.length > 5 && (
                     <div style={{
-                      position: 'absolute', bottom: 0, left: 0, right: 0, height: '70px',
+                      position: 'absolute', bottom: 0, left: 0, right: 0, height: '60px',
                       background: 'linear-gradient(to top, rgba(10, 10, 20, 1) 0%, rgba(10, 10, 20, 0) 100%)',
                       pointerEvents: 'none'
                     }} />
@@ -1017,61 +995,50 @@ export default function ClientDashboard() {
 
             {/* Influencers */}
             <section style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: '16px',
-              overflow: 'hidden',
-              position: 'relative'
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: '20px', overflow: 'hidden', position: 'relative'
             }}>
-              <div style={{ padding: '18px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: '600', margin: 0 }}>
-                  👥 Influenseri ({analytics.uniqueInfluencers.length})
-                </h3>
+              <div style={{ padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: '600', margin: 0 }}>👥 Influenseri ({analytics.influencerList.length})</h3>
               </div>
               
-              {analytics.uniqueInfluencers.length === 0 ? (
-                <div style={{ padding: '40px', textAlign: 'center' }}>
-                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>Nema podataka</p>
-                </div>
+              {analytics.influencerList.length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center' }}><p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>Nema podataka</p></div>
               ) : (
                 <div style={{ position: 'relative' }}>
-                  <div style={{ maxHeight: '380px', overflowY: 'auto', padding: '10px' }}>
-                    {analytics.uniqueInfluencers.map((inf, i) => (
+                  <div style={{ maxHeight: '360px', overflowY: 'auto', padding: '10px' }}>
+                    {analytics.influencerList.map((inf, i) => (
                       <div key={i} style={{
                         display: 'flex', alignItems: 'center', gap: '12px',
                         padding: '12px 14px', marginBottom: '6px',
-                        background: 'rgba(255,255,255,0.02)', borderRadius: '12px',
-                        transition: 'background 0.2s ease'
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
-                      >
+                        background: i === 0 ? 'rgba(129, 140, 248, 0.1)' : 'rgba(255,255,255,0.02)',
+                        borderRadius: '12px', border: i === 0 ? '1px solid rgba(129, 140, 248, 0.2)' : '1px solid transparent'
+                      }}>
+                        <span style={{ fontSize: '12px', fontWeight: '700', color: 'rgba(255,255,255,0.3)', width: '20px' }}>#{i + 1}</span>
                         <div style={{
-                          width: '38px', height: '38px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
+                          width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
                           background: inf.image ? 'transparent' : `linear-gradient(135deg, hsl(${(i * 67) % 360}, 50%, 50%), hsl(${(i * 67 + 40) % 360}, 50%, 40%))`,
                           display: 'flex', alignItems: 'center', justifyContent: 'center'
                         }}>
                           {inf.image ? (
                             <img src={inf.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           ) : (
-                            <span style={{ color: '#fff', fontWeight: '600', fontSize: '14px' }}>{inf.name?.charAt(0) || '?'}</span>
+                            <span style={{ color: '#fff', fontWeight: '600', fontSize: '13px' }}>{inf.name?.charAt(0) || '?'}</span>
                           )}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: '13px', fontWeight: '500', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{inf.name}</p>
-                          <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: '2px 0 0' }}>
-                            {inf.clips} klip{inf.clips !== 1 ? 'a' : ''} • {formatNumber(inf.views)} pregleda
+                          <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', margin: '2px 0 0' }}>
+                            {inf.clips} klip{inf.clips !== 1 ? 'a' : ''} • {formatNumber(inf.views)}
                           </p>
                         </div>
-                        {i === 0 && (
-                          <span style={{ fontSize: '16px' }}>👑</span>
-                        )}
+                        {i === 0 && <span style={{ fontSize: '16px' }}>👑</span>}
                       </div>
                     ))}
                   </div>
-                  {analytics.uniqueInfluencers.length > 6 && (
+                  {analytics.influencerList.length > 5 && (
                     <div style={{
-                      position: 'absolute', bottom: 0, left: 0, right: 0, height: '60px',
+                      position: 'absolute', bottom: 0, left: 0, right: 0, height: '50px',
                       background: 'linear-gradient(to top, rgba(10, 10, 20, 1) 0%, rgba(10, 10, 20, 0) 100%)',
                       pointerEvents: 'none'
                     }} />
@@ -1082,11 +1049,7 @@ export default function ClientDashboard() {
           </div>
 
           {/* Footer */}
-          <footer style={{ 
-            marginTop: '40px', paddingTop: '20px', 
-            borderTop: '1px solid rgba(255,255,255,0.06)', 
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center' 
-          }}>
+          <footer style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)' }}>Powered by</span>
               <span style={{ fontSize: '14px', fontWeight: '700', color: 'rgba(255,255,255,0.6)' }}>VOICE</span>
@@ -1095,29 +1058,7 @@ export default function ClientDashboard() {
           </footer>
         </main>
 
-        {/* Modals */}
-        <BoostModal 
-          isOpen={boostModalOpen} 
-          onClose={() => setBoostModalOpen(false)} 
-          clientName={clientData?.client?.name}
-        />
-        
-        <MetricModal 
-          isOpen={metricModal.isOpen}
-          onClose={() => setMetricModal({ ...metricModal, isOpen: false })}
-          title={metricModal.title}
-          months={clientData?.months}
-          metricKey={metricModal.metricKey}
-          color={metricModal.color}
-        />
-
-        <InsightsModal
-          isOpen={insightsModalOpen}
-          onClose={() => setInsightsModalOpen(false)}
-          clips={clips}
-          months={clientData?.months || []}
-          cumulative={cumulative}
-        />
+        <BoostModal isOpen={boostModalOpen} onClose={() => setBoostModalOpen(false)} clientName={clientData?.client?.name} />
       </div>
     </>
   );
