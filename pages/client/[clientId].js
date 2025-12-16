@@ -74,6 +74,163 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+// Metric Detail Modal
+const MetricModal = ({ isOpen, onClose, title, months, metricKey, color }) => {
+  if (!isOpen || !months) return null;
+
+  // Get values for this metric across all months
+  const values = months.map(m => ({
+    month: m.month,
+    value: m[metricKey] || 0
+  }));
+
+  const maxValue = Math.max(...values.map(v => v.value), 1);
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 0, 0, 0.8)',
+      backdropFilter: 'blur(8px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+      padding: '20px'
+    }} onClick={onClose}>
+      <div style={{
+        background: 'linear-gradient(180deg, #1a1a2e 0%, #16162a 100%)',
+        borderRadius: '20px',
+        padding: '28px',
+        maxWidth: '450px',
+        width: '100%',
+        border: '1px solid rgba(255,255,255,0.1)',
+        boxShadow: '0 25px 50px rgba(0,0,0,0.5)',
+        position: 'relative'
+      }} onClick={e => e.stopPropagation()}>
+        
+        {/* Header */}
+        <div style={{ marginBottom: '24px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: '700', margin: '0 0 4px', color: '#fff' }}>
+            {title} po mesecima
+          </h2>
+          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>
+            Ukupno: {formatNumber(values.reduce((sum, v) => sum + v.value, 0))}
+          </p>
+        </div>
+
+        {/* Months List */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {values.map((item, i) => {
+            const intensity = item.value / maxValue;
+            const bgOpacity = 0.1 + (intensity * 0.4); // 0.1 to 0.5
+            const textOpacity = 0.5 + (intensity * 0.5); // 0.5 to 1.0
+            
+            return (
+              <div
+                key={i}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '14px 16px',
+                  background: `rgba(${color}, ${bgOpacity})`,
+                  borderRadius: '10px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <span style={{ 
+                  fontSize: '14px', 
+                  fontWeight: '500',
+                  color: `rgba(255,255,255,${textOpacity})`
+                }}>
+                  {item.month}
+                </span>
+                <span style={{ 
+                  fontSize: '16px', 
+                  fontWeight: '700',
+                  color: `rgba(255,255,255,${textOpacity})`
+                }}>
+                  {formatNumber(item.value)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            background: 'rgba(255,255,255,0.1)',
+            border: 'none',
+            borderRadius: '50%',
+            width: '32px',
+            height: '32px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'rgba(255,255,255,0.5)'
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Interactive Metric Card
+const MetricCard = ({ label, value, onClick, color }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  
+  return (
+    <div 
+      onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        textAlign: 'center',
+        padding: '16px',
+        borderRadius: '12px',
+        cursor: 'pointer',
+        background: isHovered ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.02)',
+        border: isHovered ? '1px solid rgba(255,255,255,0.15)' : '1px solid transparent',
+        transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
+        boxShadow: isHovered ? '0 8px 24px rgba(0,0,0,0.3)' : 'none',
+        transition: 'all 0.2s ease'
+      }}
+    >
+      <p style={{ fontSize: '24px', fontWeight: '700', margin: 0, color: isHovered ? '#fff' : 'rgba(255,255,255,0.9)' }}>
+        {value}
+      </p>
+      <p style={{ 
+        fontSize: '10px', 
+        color: isHovered ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.4)', 
+        margin: '4px 0 0', 
+        textTransform: 'uppercase', 
+        letterSpacing: '0.5px' 
+      }}>
+        {label}
+      </p>
+      {isHovered && (
+        <p style={{ fontSize: '9px', color: 'rgba(129, 140, 248, 0.8)', margin: '6px 0 0' }}>
+          Klikni za detalje →
+        </p>
+      )}
+    </div>
+  );
+};
+
 // Boost Modal Component
 const BoostModal = ({ isOpen, onClose, clientName }) => {
   if (!isOpen) return null;
@@ -125,10 +282,10 @@ Hvala!`
         maxWidth: '600px',
         width: '100%',
         border: '1px solid rgba(255,255,255,0.1)',
-        boxShadow: '0 25px 50px rgba(0,0,0,0.5)'
+        boxShadow: '0 25px 50px rgba(0,0,0,0.5)',
+        position: 'relative'
       }} onClick={e => e.stopPropagation()}>
         
-        {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <div style={{
             width: '48px',
@@ -152,7 +309,6 @@ Hvala!`
           </p>
         </div>
 
-        {/* Packages */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
           {packages.map((pkg, i) => (
             <div
@@ -197,46 +353,17 @@ Hvala!`
                   Popularno
                 </span>
               )}
-              <p style={{ 
-                fontSize: '32px', 
-                fontWeight: '700', 
-                color: '#fff',
-                margin: '0 0 4px'
-              }}>
-                {pkg.views}
-              </p>
-              <p style={{ 
-                fontSize: '11px', 
-                color: 'rgba(255,255,255,0.4)',
-                margin: '0 0 12px',
-                textTransform: 'uppercase',
-                letterSpacing: '1px'
-              }}>
-                pregleda
-              </p>
-              <p style={{ 
-                fontSize: '20px', 
-                fontWeight: '600', 
-                color: pkg.popular ? '#818cf8' : '#fff',
-                margin: 0
-              }}>
-                €{pkg.price}
-              </p>
+              <p style={{ fontSize: '32px', fontWeight: '700', color: '#fff', margin: '0 0 4px' }}>{pkg.views}</p>
+              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '1px' }}>pregleda</p>
+              <p style={{ fontSize: '20px', fontWeight: '600', color: pkg.popular ? '#818cf8' : '#fff', margin: 0 }}>€{pkg.price}</p>
             </div>
           ))}
         </div>
 
-        {/* Footer note */}
-        <p style={{ 
-          fontSize: '12px', 
-          color: 'rgba(255,255,255,0.3)', 
-          textAlign: 'center',
-          margin: 0
-        }}>
+        <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', textAlign: 'center', margin: 0 }}>
           Kliknite na paket da pošaljete narudžbinu
         </p>
 
-        {/* Close button */}
         <button
           onClick={onClose}
           style={{
@@ -275,6 +402,7 @@ export default function ClientDashboard() {
   const [clips, setClips] = useState([]);
   const [clipsLoading, setClipsLoading] = useState(false);
   const [showBoostModal, setShowBoostModal] = useState(false);
+  const [metricModal, setMetricModal] = useState({ isOpen: false, title: '', metricKey: '', color: '' });
 
   useEffect(() => {
     if (!clientId) return;
@@ -355,6 +483,10 @@ export default function ClientDashboard() {
     return acc;
   }, []);
 
+  const openMetricModal = (title, metricKey, color) => {
+    setMetricModal({ isOpen: true, title, metricKey, color });
+  };
+
   return (
     <>
       <Head>
@@ -363,11 +495,19 @@ export default function ClientDashboard() {
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </Head>
 
-      {/* Boost Modal */}
+      {/* Modals */}
       <BoostModal 
         isOpen={showBoostModal} 
         onClose={() => setShowBoostModal(false)} 
         clientName={clientData?.client?.name}
+      />
+      <MetricModal
+        isOpen={metricModal.isOpen}
+        onClose={() => setMetricModal({ ...metricModal, isOpen: false })}
+        title={metricModal.title}
+        months={clientData?.months}
+        metricKey={metricModal.metricKey}
+        color={metricModal.color}
       />
 
       <div style={{ minHeight: '100vh', background: '#0f0f1a', fontFamily: "'Inter', -apple-system, sans-serif", color: '#ffffff' }}>
@@ -391,7 +531,6 @@ export default function ClientDashboard() {
               </div>
             </div>
             
-            {/* Boost Button */}
             <button
               onClick={() => setShowBoostModal(true)}
               style={{
@@ -422,7 +561,7 @@ export default function ClientDashboard() {
 
         <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
           
-          {/* Cumulative Progress - Only if multiple months */}
+          {/* Cumulative Progress */}
           {cumulative && cumulative.monthsCount > 1 && (
             <section style={{
               background: 'linear-gradient(135deg, rgba(129, 140, 248, 0.1) 0%, rgba(167, 139, 250, 0.1) 100%)',
@@ -462,26 +601,31 @@ export default function ClientDashboard() {
           {/* Stats + Monthly Progress Row */}
           <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
             
-            {/* Left: 3 Metrics */}
+            {/* Left: 3 Interactive Metric Cards */}
             <div style={{
               background: 'rgba(255,255,255,0.03)',
               border: '1px solid rgba(255,255,255,0.06)',
               borderRadius: '12px',
-              padding: '16px 20px',
+              padding: '12px',
               display: 'grid',
               gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '16px'
+              gap: '8px'
             }}>
-              {[
-                { label: 'Pregleda', value: formatNumber(selectedMonth?.totalViews) },
-                { label: 'Lajkova', value: formatNumber(selectedMonth?.totalLikes) },
-                { label: 'Deljenja', value: formatNumber(selectedMonth?.totalShares) }
-              ].map((metric, i) => (
-                <div key={i} style={{ textAlign: 'center' }}>
-                  <p style={{ fontSize: '24px', fontWeight: '700', margin: 0 }}>{metric.value}</p>
-                  <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', margin: '4px 0 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{metric.label}</p>
-                </div>
-              ))}
+              <MetricCard 
+                label="Pregleda" 
+                value={formatNumber(selectedMonth?.totalViews)}
+                onClick={() => openMetricModal('Pregledi', 'totalViews', '129, 140, 248')}
+              />
+              <MetricCard 
+                label="Lajkova" 
+                value={formatNumber(selectedMonth?.totalLikes)}
+                onClick={() => openMetricModal('Lajkovi', 'totalLikes', '244, 114, 182')}
+              />
+              <MetricCard 
+                label="Deljenja" 
+                value={formatNumber(selectedMonth?.totalShares)}
+                onClick={() => openMetricModal('Deljenja', 'totalShares', '52, 211, 153')}
+              />
             </div>
 
             {/* Right: Monthly Progress */}
@@ -607,7 +751,7 @@ export default function ClientDashboard() {
               )}
             </section>
 
-            {/* Influencers with fade scroll */}
+            {/* Influencers */}
             <section style={{
               background: 'rgba(255,255,255,0.03)',
               border: '1px solid rgba(255,255,255,0.06)',
