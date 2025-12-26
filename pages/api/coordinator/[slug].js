@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     if (isHOD) {
       offersFormula = `OR({Status} = "Sent", {Status} = "Accepted", {Status} = "Declined", {Status} = "Active")`;
     } else {
-      offersFormula = `FIND("${userName}", ARRAYJOIN({Coordinator}))`;
+      offersFormula = `{Coordinator Name} = "${userName}"`;
     }
 
     let offers = [];
@@ -63,10 +63,10 @@ export default async function handler(req, res) {
       console.log('Offers table error:', e.message);
     }
 
-    // 3. Get contract months - filter by coordinator unless HOD/Admin
+    // 3. Get contract months - filter by Coordinator Name
     let monthsFormula = `{Contract Status} = "Active"`;
     if (!isHOD) {
-      monthsFormula = `AND({Contract Status} = "Active", FIND("${userName}", ARRAYJOIN({Coordinator})))`;
+      monthsFormula = `AND({Contract Status} = "Active", {Coordinator Name} = "${userName}")`;
     }
 
     const contractMonths = await base('Contract Months')
@@ -127,4 +127,93 @@ export default async function handler(req, res) {
     const yesterdayStr = new Date(today - 86400000).toISOString().split('T')[0];
 
     // Offers categorization
-    const pendingOffers = offers.filter(
+    const pendingOffers = offers.filter(o => o.status === 'Sent' && o.type === 'Offer');
+    const pendingApplications = offers.filter(o => o.status === 'Sent' && o.type === 'Application');
+    const todayResponses = offers.filter(o => 
+      o.responseDate && (o.responseDate === todayStr || o.responseDate === yesterdayStr)
+    );
+    const acceptedToday = todayResponses.filter(o => o.status === 'Accepted');
+    const declinedToday = todayResponses.filter(o => o.status === 'Declined');
+
+    // Clips categorization
+    const waitingContent = clips.filter(c => c.status === 'Draft' || c.clipStatus === 'In Progress');
+    const needsReview = clips.filter(c => c.status === 'In Progress' || c.clipStatus === 'Review');
+    const publishedRecent = clips.filter(c => c.status === 'Published').slice(0, 20);
+
+    // Today's stats
+    const publishedToday = clips.filter(c => 
+      c.publishDate && c.publishDate.startsWith(todayStr)
+    );
+    const viewsToday = publishedToday.reduce((sum, c) => sum + c.views, 0);
+
+    // 6. Get influencer details for display
+    const influencerIds = [...new Set([
+      ...clips.map(c => c.influencerId),
+      ...offers.map(o => o.influencerId)
+    ].filter(Boolean))];
+
+    let influencerMap = {};
+    if (influencerIds.length > 0) {
+      const infFormula = `OR(${influencerIds.map(id => `RECORD_ID() = "${id}"`).join(',')})`;
+      const infRecords = await base('Influencers')
+        .select({
+          filterByFormula: infFormula,
+          fields: ['Influencer Name', 'E-mail', 'Contact Number', 'Tier', 'Influencer_Image']
+        })
+        .all();
+
+      infRecords.forEach(inf => {
+        influencerMap[inf.id] = {
+          id: inf.id,
+          name: inf.fields['Influencer Name'] || '',
+          email: inf.fields['E-mail'] || '',
+          phone: inf.fields['Contact Number'] || '',
+          tier: inf.fields['Tier'] || 'Basic',
+          image: inf.fields['Influencer_Image']?.[0]?.url || null
+        };
+      });
+    }
+
+    // Enrich with influencer details
+    const enrichWithInfluencer = (items) => items.map(item => ({
+      ...item,
+      influencer: item.influencerId ? influencerMap[item.influencerId] : null
+    }));
+
+    res.status(200).json({
+      user: {
+        id: user.id,
+        name: userFields['Name'] || '',
+        email: userFields['Email'] || '',
+        role: userFields['Role'] || '',
+        slug: userFields['Slag'] || ''
+      },
+      summary: {
+        activeMonths: months.length,
+        pendingOffers: pendingOffers.length,
+        pendingApplications: pendingApplications.length,
+        acceptedToday: acceptedToday.length,
+        declinedToday: declinedToday.length,
+        waitingContent: waitingContent.length,
+        publishedToday: publishedToday.length,
+        viewsToday: viewsToday
+      },
+      offers: {
+        pending: enrichWithInfluencer(pendingOffers),
+        applications: enrichWithInfluencer(pendingApplications),
+        acceptedToday: enrichWithInfluencer(acceptedToday),
+        declinedToday: enrichWithInfluencer(declinedToday)
+      },
+      clips: {
+        waitingContent: enrichWithInfluencer(waitingContent),
+        needsReview: enrichWithInfluencer(needsReview),
+        publishedRecent: enrichWithInfluencer(publishedRecent)
+      },
+      months: months
+    });
+
+  } catch (error) {
+    console.error('Airtable error:', error);
+    res.status(500).json({ error: 'Failed to fetch data', details: error.message });
+  }
+}
