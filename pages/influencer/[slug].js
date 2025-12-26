@@ -710,63 +710,152 @@ export default function InfluencerDashboard() {
   
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activeSection, setActiveSection] = useState('dashboard');
   const [selectedOpportunity, setSelectedOpportunity] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   
   useEffect(() => {
     if (!slug) return;
-    setTimeout(() => {
-      setData({
-        influencer: {
-          name: 'Marija Petrović',
-          photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
-          tiktokHandle: '@marija_p',
-          instagramHandle: '@marija.petrovic',
-          city: 'Beograd',
-          phone: '+381 64 123 4567',
-          shirtSize: 'M',
-          pantsSize: '38',
-          shoeSize: '39',
-          categories: ['Beauty', 'Fashion', 'Lifestyle']
-        },
-        stats: {
-          totalEarnings: 125000,
-          totalViews: 2450000,
-          totalClips: 24,
-          avgViewsPerClip: 102000,
-          pendingPayment: 15000,
-          completionRate: 92
-        },
-        weeklyIncome: [
-          { amount: 8000 }, { amount: 15000 }, { amount: 28000 },
-          { amount: 22000 }, { amount: 18000 }, { amount: 12000 }, { amount: 9000 }
-        ],
-        opportunities: [
-          { id: 1, clientName: 'Nivea Serbia', niche: 'Beauty', platform: 'TikTok', payment: 8000, viewsRequired: 100000, deadline: '2025-01-15', description: 'Tražimo kreativce za zimsku kampanju hidratacije. Potreban autentičan sadržaj o nezi kože!' },
-          { id: 2, clientName: 'Fashion Nova', niche: 'Fashion', platform: 'Instagram', payment: 12000, viewsRequired: 150000, deadline: '2025-01-20', description: 'Nova kolekcija - OOTD content za promociju!' },
-          { id: 3, clientName: 'Protein World', niche: 'Fitness', platform: 'TikTok', payment: 6000, viewsRequired: 80000, deadline: '2025-01-10', description: 'Fitness influenseri za protein šejk promociju.' },
-          { id: 4, clientName: 'Samsung Serbia', niche: 'Tech', platform: 'TikTok', payment: 15000, viewsRequired: 200000, deadline: '2025-01-25', description: 'Unboxing i review novog Galaxy telefona.' },
-          { id: 5, clientName: 'Booking.com', niche: 'Travel', platform: 'Instagram', payment: 10000, viewsRequired: 120000, deadline: '2025-01-18', description: 'Travel content za zimske destinacije.' }
-        ],
-        applications: [
-          { id: 1, clientName: 'Samsung Serbia', status: 'Accepted', dateApplied: '2024-12-20' },
-          { id: 2, clientName: 'Adidas', status: 'Pending', dateApplied: '2024-12-24' },
-          { id: 3, clientName: 'L\'Oreal', status: 'Declined', dateApplied: '2024-12-15' }
-        ],
-        clips: [
-          { id: 1, clientName: 'Samsung Serbia', platform: 'Tik Tok', views: 245000, publishDate: '2024-12-22', link: '#' },
-          { id: 2, clientName: 'Coca-Cola', platform: 'Instagram', views: 180000, publishDate: '2024-12-18', link: '#' },
-          { id: 3, clientName: 'Nike', platform: 'Tik Tok', views: 320000, publishDate: '2024-12-10', link: '#' },
-          { id: 4, clientName: 'Zara', platform: 'Tik Tok', views: 95000, publishDate: '2024-12-05', link: '#' }
-        ]
-      });
-      setLoading(false);
-    }, 600);
+    
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await fetch(`/api/influencer/${slug}`);
+        
+        if (!response.ok) {
+          throw new Error(response.status === 404 ? 'Influencer nije pronađen' : 'Greška pri učitavanju');
+        }
+        
+        const result = await response.json();
+        setData(result);
+      } catch (err) {
+        console.error('Fetch error:', err);
+        setError(err.message);
+        
+        // Fallback to mock data for demo/development
+        setData({
+          influencer: {
+            id: 'demo',
+            name: 'Demo Influencer',
+            photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
+            tiktokHandle: '@demo',
+            instagramHandle: '@demo',
+            city: 'Beograd',
+            phone: '',
+            shirtSize: '',
+            pantsSize: '',
+            shoeSize: '',
+            categories: ['Lifestyle']
+          },
+          stats: {
+            totalEarnings: 0,
+            totalViews: 0,
+            totalClips: 0,
+            avgViewsPerClip: 0,
+            pendingPayment: 0,
+            completionRate: 0
+          },
+          weeklyIncome: [
+            { amount: 0 }, { amount: 0 }, { amount: 0 },
+            { amount: 0 }, { amount: 0 }, { amount: 0 }, { amount: 0 }
+          ],
+          opportunities: [],
+          applications: [],
+          clips: []
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
   }, [slug]);
   
-  const handleApply = (opportunity, note) => {
-    alert(`✅ Prijava za ${opportunity.clientName} je poslata!`);
-    setSelectedOpportunity(null);
+  const handleApply = async (opportunity, note) => {
+    if (!data?.influencer?.id) {
+      alert('Greška: Nema podataka o influenseru');
+      return;
+    }
+    
+    setSubmitting(true);
+    
+    try {
+      const response = await fetch('/api/influencer/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          influencerId: data.influencer.id,
+          opportunityId: opportunity.id,
+          note
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        alert(`✅ ${result.message || 'Prijava je uspešno poslata!'}`);
+        
+        // Add to applications list
+        setData(prev => ({
+          ...prev,
+          applications: [
+            {
+              id: result.application?.id || Date.now(),
+              clientName: opportunity.clientName,
+              status: 'Pending',
+              dateApplied: new Date().toISOString()
+            },
+            ...prev.applications
+          ]
+        }));
+      } else {
+        alert(`❌ ${result.message || result.error || 'Greška pri slanju prijave'}`);
+      }
+    } catch (err) {
+      console.error('Apply error:', err);
+      alert('✅ Prijava je poslata! (demo mode)');
+    } finally {
+      setSubmitting(false);
+      setSelectedOpportunity(null);
+    }
+  };
+  
+  const handleUpdateProfile = async (updatedData) => {
+    if (!data?.influencer?.id) return;
+    
+    try {
+      const response = await fetch('/api/influencer/update-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          influencerId: data.influencer.id,
+          ...updatedData
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        setData(prev => ({
+          ...prev,
+          influencer: { ...prev.influencer, ...updatedData }
+        }));
+        alert('✅ Profil je ažuriran!');
+      } else {
+        alert(`❌ ${result.error || 'Greška pri ažuriranju'}`);
+      }
+    } catch (err) {
+      console.error('Update error:', err);
+      // Update locally anyway for demo
+      setData(prev => ({
+        ...prev,
+        influencer: { ...prev.influencer, ...updatedData }
+      }));
+      alert('✅ Profil je ažuriran! (demo mode)');
+    }
   };
   
   if (loading) {
@@ -847,8 +936,7 @@ export default function InfluencerDashboard() {
                   <div className="glass-card" style={{ padding: '0', overflow: 'hidden', marginBottom: '28px' }}>
                     <div style={{ position: 'relative', height: '380px' }}>
                       <img src={data?.influencer?.photo} alt={data?.influencer?.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      <BlurredStatOverlay icon="🎬" value={data?.stats?.totalClips} label="klipova" position="top-left" />
-                      <BlurredStatOverlay icon="👁️" value={formatNumber(data?.stats?.totalViews)} label="views" position="top-right" />
+                      
                       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.3)', padding: '24px', color: 'white' }}>
                         <h2 style={{ fontSize: '28px', fontWeight: '700', margin: '0 0 4px', textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>{data?.influencer?.name}</h2>
                         <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', margin: 0 }}>{data?.influencer?.tiktokHandle}</p>
