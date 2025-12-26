@@ -64,7 +64,7 @@ export default async function handler(req, res) {
     }
 
     // 3. Get contract months - use FIND for lookup field
-    let monthsFormula = `{Contract Status} = "Active"`;
+    let monthsFormula = `{Month}`;
     if (!isHOD) {
       monthsFormula = `AND({Contract Status} = "Active", FIND("${userName}", {Coordinator Name}))`;
     }
