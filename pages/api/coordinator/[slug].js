@@ -245,8 +245,9 @@ export default async function handler(req, res) {
     const declinedToday = offers.filter(o => o.status === 'Declined' && o.responseDate === today);
 
     const waitingContent = processedClips.filter(c => c.clipStatus === 'In Progress');
-    const publishedRecent = processedClips.filter(c => c.status === 'Published').slice(0, 30);
-    const publishedToday = processedClips.filter(c => c.publishDate === today);
+    const publishedClips = processedClips.filter(c => c.status === 'Published' || c.status === 'Done');
+    const publishedRecent = publishedClips.slice(0, 50);
+    const publishedToday = publishedClips.filter(c => c.publishDate === today);
 
     // Return response
     res.status(200).json({
@@ -274,9 +275,10 @@ export default async function handler(req, res) {
         declinedToday
       },
       clips: {
-        waitingContent: waitingContent.slice(0, 15),
+        waitingContent: waitingContent.slice(0, 20),
         needsReview: [],
-        publishedRecent
+        publishedRecent,
+        publishedToday // Add today's clips
       },
       months: activeMonths
     });
