@@ -1,5 +1,5 @@
-// pages/influencer/[slug].js - Influencer Dashboard v2
-// POP ART / NEO-BRUTALIST Design with VOICE Logo
+// pages/influencer/[slug].js - Influencer Dashboard v3
+// WARM GLASSMORPHISM - Crextio-inspired design
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -14,8 +14,8 @@ const formatNumber = (num) => {
 };
 
 const formatCurrency = (num) => {
-  if (!num || isNaN(num)) return '0 RSD';
-  return parseInt(num).toLocaleString('sr-RS') + ' RSD';
+  if (!num || isNaN(num)) return '0';
+  return parseInt(num).toLocaleString('sr-RS');
 };
 
 const formatDate = (dateStr) => {
@@ -29,482 +29,296 @@ const getTimeAgo = (dateStr) => {
   if (!dateStr) return '';
   const diff = Date.now() - new Date(dateStr).getTime();
   const days = Math.floor(diff / 86400000);
-  if (days === 0) return 'DANAS';
-  if (days === 1) return 'JUČE';
-  if (days < 7) return `PRE ${days} DANA`;
+  if (days === 0) return 'Danas';
+  if (days === 1) return 'Juče';
+  if (days < 7) return `Pre ${days} dana`;
   return formatDate(dateStr);
 };
 
-// ============ GLOBAL STYLES - POP ART ============
+// ============ GLOBAL STYLES ============
 const GlobalStyles = () => (
   <style>{`
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Bebas+Neue&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
     
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
     body {
-      font-family: 'Space Grotesk', sans-serif;
-      background: #FFFBF5;
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      background: linear-gradient(135deg, #C4C1D4 0%, #D8D5E4 50%, #E8E4D9 100%);
       min-height: 100vh;
-      overflow-x: hidden;
     }
     
-    @keyframes float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-15px) rotate(2deg); } }
-    @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-    @keyframes rainbow { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
-    @keyframes popIn { 0% { transform: scale(0) rotate(-10deg); opacity: 0; } 50% { transform: scale(1.1) rotate(2deg); } 100% { transform: scale(1) rotate(0deg); opacity: 1; } }
-    @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7); } 50% { box-shadow: 0 0 0 15px rgba(255, 107, 107, 0); } }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.9; } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
     @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-    @keyframes blink { 0%, 50%, 100% { opacity: 1; } 25%, 75% { opacity: 0.5; } }
+    @keyframes progressFill { from { stroke-dashoffset: 283; } }
     
-    ::-webkit-scrollbar { width: 12px; }
-    ::-webkit-scrollbar-track { background: #FFE66D; }
-    ::-webkit-scrollbar-thumb { background: #FF6B6B; border: 3px solid #FFE66D; border-radius: 0; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
     
-    .brutalist-card {
-      background: white;
-      border: 4px solid #2D3142;
-      box-shadow: 8px 8px 0 #2D3142;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    .glass-card {
+      background: rgba(255, 255, 255, 0.65);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+      transition: all 0.3s ease;
     }
     
-    .brutalist-card:hover {
-      transform: translate(-4px, -4px);
-      box-shadow: 12px 12px 0 #2D3142;
+    .glass-card:hover {
+      background: rgba(255, 255, 255, 0.75);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+      transform: translateY(-2px);
     }
     
-    .pop-button {
-      background: #FF6B6B;
+    .dark-card {
+      background: #2D2D3A;
+      border-radius: 24px;
       color: white;
-      border: 4px solid #2D3142;
-      padding: 14px 28px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px;
-      letter-spacing: 2px;
-      cursor: pointer;
-      box-shadow: 4px 4px 0 #2D3142;
-      transition: all 0.15s ease;
     }
     
-    .pop-button:hover {
-      transform: translate(-2px, -2px);
-      box-shadow: 6px 6px 0 #2D3142;
-    }
-    
-    .pop-button:active {
-      transform: translate(2px, 2px);
-      box-shadow: 2px 2px 0 #2D3142;
-    }
-    
-    .yellow-button {
-      background: #FFE66D;
-      color: #2D3142;
-    }
-    
-    .green-button {
-      background: #4ECDC4;
+    .warm-gradient {
+      background: linear-gradient(135deg, #FFF8E7 0%, #FFE8B8 50%, #FFD98C 100%);
     }
     
     .tag {
-      display: inline-block;
-      padding: 6px 14px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 14px;
-      letter-spacing: 1px;
-      border: 3px solid #2D3142;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 600;
     }
     
-    .tag-hot { background: #FF6B6B; color: white; }
-    .tag-new { background: #4ECDC4; color: white; }
-    .tag-pending { background: #FFE66D; color: #2D3142; }
-    .tag-accepted { background: #95E881; color: #2D3142; }
-    .tag-declined { background: #2D3142; color: white; }
+    .tag-yellow { background: #F5C842; color: #2D2D3A; }
+    .tag-green { background: #7DD87D; color: #2D2D3A; }
+    .tag-gray { background: rgba(0,0,0,0.08); color: #666; }
+    .tag-pending { background: #FFE082; color: #5D4E37; }
+    .tag-accepted { background: #A5D6A7; color: #2E5A2E; }
+    .tag-declined { background: #FFAB91; color: #5D3A3A; }
+    
+    .btn-primary {
+      background: #F5C842;
+      color: #2D2D3A;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(245, 200, 66, 0.3);
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(245, 200, 66, 0.4);
+    }
+    
+    .btn-secondary {
+      background: rgba(255,255,255,0.8);
+      color: #2D2D3A;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-secondary:hover {
+      background: white;
+    }
     
     input, textarea, select {
-      font-family: 'Space Grotesk', sans-serif;
-      border: 3px solid #2D3142;
-      padding: 12px 16px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: rgba(255,255,255,0.7);
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 12px;
+      padding: 14px 18px;
       font-size: 14px;
-      background: white;
       outline: none;
       transition: all 0.2s;
     }
     
-    input:focus, textarea:focus, select:focus {
-      box-shadow: 4px 4px 0 #FFE66D;
+    input:focus, textarea:focus {
+      background: white;
+      border-color: #F5C842;
+      box-shadow: 0 0 0 3px rgba(245, 200, 66, 0.2);
     }
   `}</style>
 );
 
 // ============ COMPONENTS ============
 
-// VOICE Logo Component
-const VoiceLogo = () => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-    <img 
-      src="/uploads/VOICE__3_.png" 
-      alt="VOICE" 
-      style={{ height: '40px', width: 'auto' }}
-      onError={(e) => {
-        e.target.style.display = 'none';
-        e.target.nextSibling.style.display = 'flex';
-      }}
-    />
-    <div style={{ 
-      display: 'none', alignItems: 'center', gap: '8px',
-      fontFamily: 'Bebas Neue, sans-serif', fontSize: '32px', color: '#3D3B73', letterSpacing: '2px'
-    }}>
-      VOICE
-    </div>
-  </div>
-);
-
-// Text Logo Fallback
-const TextLogo = () => (
-  <div style={{ 
-    fontFamily: 'Bebas Neue, sans-serif', 
-    fontSize: '36px', 
-    color: '#3D3B73', 
-    letterSpacing: '3px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px'
-  }}>
-    <span>VOICE</span>
-    <span style={{ 
-      fontSize: '12px', 
-      background: '#FF6B6B', 
-      color: 'white', 
-      padding: '4px 8px',
-      border: '2px solid #2D3142',
-      transform: 'rotate(-3deg)'
-    }}>CREATOR</span>
-  </div>
-);
-
-// Decorative Background
-const PopArtBackground = () => (
-  <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
-    {/* Halftone dots pattern */}
-    <div style={{
-      position: 'absolute', inset: 0, opacity: 0.03,
-      backgroundImage: `radial-gradient(#2D3142 2px, transparent 2px)`,
-      backgroundSize: '20px 20px'
-    }} />
-    
-    {/* Floating shapes */}
-    <div style={{
-      position: 'absolute', top: '10%', right: '5%', width: '150px', height: '150px',
-      background: '#FFE66D', border: '4px solid #2D3142', borderRadius: '50%',
-      animation: 'float 8s ease-in-out infinite', opacity: 0.6
-    }} />
-    <div style={{
-      position: 'absolute', bottom: '20%', left: '3%', width: '100px', height: '100px',
-      background: '#FF6B6B', border: '4px solid #2D3142',
-      animation: 'float 6s ease-in-out infinite reverse', opacity: 0.5,
-      transform: 'rotate(45deg)'
-    }} />
-    <div style={{
-      position: 'absolute', top: '60%', right: '10%', width: '80px', height: '80px',
-      background: '#4ECDC4', border: '4px solid #2D3142',
-      animation: 'float 10s ease-in-out infinite', opacity: 0.4
-    }} />
-    
-    {/* Comic-style stars */}
-    {[...Array(5)].map((_, i) => (
-      <div key={i} style={{
-        position: 'absolute',
-        top: `${20 + i * 15}%`,
-        left: `${10 + i * 20}%`,
-        fontSize: '24px',
-        animation: `float ${5 + i}s ease-in-out infinite`,
-        opacity: 0.3
-      }}>✦</div>
-    ))}
-  </div>
-);
-
-// Marquee Banner
-const MarqueeBanner = () => (
-  <div style={{
-    background: '#2D3142', color: 'white', padding: '10px 0',
-    overflow: 'hidden', whiteSpace: 'nowrap',
-    fontFamily: 'Bebas Neue, sans-serif', fontSize: '14px', letterSpacing: '3px'
-  }}>
-    <div style={{ display: 'inline-block', animation: 'marquee 20s linear infinite' }}>
-      {[...Array(10)].map((_, i) => (
-        <span key={i} style={{ marginRight: '60px' }}>
-          🔥 NOVI POSLOVI • 💰 ZARADI VIŠE • ⭐ TOP KREATORI • 🚀 RASTI SA NAMA • 
-        </span>
-      ))}
-    </div>
-  </div>
-);
-
-// Flip Stat Card - POP ART Style
-const FlipStatCard = ({ icon, label, value, subValue, color = 'yellow', items = [], delay = 0 }) => {
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
-  
-  useEffect(() => {
-    const timer = setTimeout(() => setIsVisible(true), delay);
-    return () => clearTimeout(timer);
-  }, [delay]);
-  
-  const colors = {
-    yellow: { bg: '#FFE66D', accent: '#2D3142' },
-    red: { bg: '#FF6B6B', accent: 'white' },
-    teal: { bg: '#4ECDC4', accent: 'white' },
-    purple: { bg: '#9B89B3', accent: 'white' },
-    green: { bg: '#95E881', accent: '#2D3142' }
-  };
-  
-  const c = colors[color];
-  const hasItems = items && items.length > 0;
+// Circular Progress Ring
+const CircularProgress = ({ percent, size = 120, strokeWidth = 10, color = '#F5C842', label, value }) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (percent / 100) * circumference;
   
   return (
-    <div style={{ 
-      perspective: '1000px', 
-      height: '180px',
-      opacity: isVisible ? 1 : 0,
-      transform: isVisible ? 'scale(1) rotate(0deg)' : 'scale(0.8) rotate(-5deg)',
-      transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-      transitionDelay: `${delay}ms`
-    }}>
-      <div
-        onClick={() => hasItems && setIsFlipped(!isFlipped)}
-        style={{
-          position: 'relative', width: '100%', height: '100%',
-          transformStyle: 'preserve-3d',
-          transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
-          transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-          cursor: hasItems ? 'pointer' : 'default'
-        }}
-      >
-        {/* Front */}
-        <div className="brutalist-card" style={{
-          position: 'absolute', width: '100%', height: '100%',
-          backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
-          padding: '20px', background: c.bg, display: 'flex', flexDirection: 'column'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-            <span style={{ fontSize: '40px' }}>{icon}</span>
-            {hasItems && (
-              <span style={{ 
-                fontFamily: 'Bebas Neue', fontSize: '20px', color: c.accent,
-                animation: 'bounce 2s ease infinite'
-              }}>↻</span>
-            )}
-          </div>
-          <p style={{ 
-            fontFamily: 'Bebas Neue', fontSize: '14px', letterSpacing: '2px',
-            color: c.accent, opacity: 0.8, marginBottom: '8px'
-          }}>{label}</p>
-          <p style={{ 
-            fontFamily: 'Bebas Neue', fontSize: '42px', color: c.accent, margin: 0, lineHeight: 1
-          }}>{value}</p>
-          {subValue && (
-            <p style={{ fontSize: '12px', color: c.accent, opacity: 0.7, marginTop: '8px', fontWeight: '600' }}>{subValue}</p>
-          )}
-          {hasItems && (
-            <p style={{ 
-              fontSize: '11px', color: c.accent, opacity: 0.6, marginTop: 'auto',
-              fontFamily: 'Bebas Neue', letterSpacing: '1px'
-            }}>KLIKNI ZA VIŠE →</p>
-          )}
-        </div>
-        
-        {/* Back */}
-        <div className="brutalist-card" style={{
-          position: 'absolute', width: '100%', height: '100%',
-          backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
-          transform: 'rotateY(180deg)', padding: '16px',
-          background: 'white', overflow: 'hidden', display: 'flex', flexDirection: 'column'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ fontFamily: 'Bebas Neue', fontSize: '14px', letterSpacing: '1px' }}>{icon} {label}</span>
-            <span style={{ fontSize: '16px', cursor: 'pointer' }}>✕</span>
-          </div>
-          <div style={{ flex: 1, overflow: 'auto' }}>
-            {items.slice(0, 4).map((item, i) => (
-              <a key={i} href={item.link} target="_blank" rel="noopener noreferrer"
-                 onClick={(e) => e.stopPropagation()}
-                 style={{
-                   display: 'flex', alignItems: 'center', gap: '10px',
-                   padding: '8px', marginBottom: '6px', textDecoration: 'none',
-                   background: i % 2 === 0 ? '#FFFBF5' : 'white',
-                   border: '2px solid #2D3142', transition: 'all 0.2s'
-                 }}>
-                <span style={{ fontSize: '16px' }}>{item.platform === 'Tik Tok' ? '📱' : '📸'}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: '12px', fontWeight: '600', margin: 0, color: '#2D3142', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {item.influencerName || item.clientName || 'Clip'}
-                  </p>
-                  <p style={{ fontSize: '10px', color: '#666', margin: 0 }}>{formatNumber(item.views)} views</p>
-                </div>
-                <span style={{ fontSize: '12px' }}>→</span>
-              </a>
-            ))}
-          </div>
-        </div>
+    <div style={{ position: 'relative', width: size, height: size }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={size/2} cy={size/2} r={radius} fill="none" 
+                stroke="rgba(0,0,0,0.06)" strokeWidth={strokeWidth} />
+        <circle cx={size/2} cy={size/2} r={radius} fill="none"
+                stroke={color} strokeWidth={strokeWidth}
+                strokeDasharray={circumference} strokeDashoffset={offset}
+                strokeLinecap="round"
+                style={{ transition: 'stroke-dashoffset 1s ease', animation: 'progressFill 1.5s ease' }} />
+      </svg>
+      <div style={{
+        position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', textAlign: 'center'
+      }}>
+        <span style={{ fontSize: size * 0.25, fontWeight: '800', color: '#2D2D3A' }}>{value}</span>
+        {label && <span style={{ fontSize: size * 0.1, color: '#888', fontWeight: '500' }}>{label}</span>}
       </div>
     </div>
   );
 };
 
-// Opportunity Card - POP ART
-const OpportunityCard = ({ opportunity, onApply, index }) => {
-  const [showNote, setShowNote] = useState(false);
-  const [note, setNote] = useState('');
-  const [isHovered, setIsHovered] = useState(false);
-  
-  const bgColors = ['#FFE66D', '#FF6B6B', '#4ECDC4', '#95E881', '#9B89B3'];
-  const bgColor = bgColors[index % bgColors.length];
+// Progress Bar with dots (like the design)
+const ProgressBarDots = ({ data, label }) => {
+  const maxValue = Math.max(...data.map(d => d.value), 1);
+  const days = ['P', 'U', 'S', 'Č', 'P', 'S', 'N'];
   
   return (
-    <div 
-      className="brutalist-card"
+    <div>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', height: '100px', marginBottom: '10px' }}>
+        {data.map((item, i) => (
+          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+            <div style={{
+              width: '8px', borderRadius: '100px',
+              background: item.highlight ? '#F5C842' : 'rgba(0,0,0,0.12)',
+              height: `${Math.max((item.value / maxValue) * 80, 10)}px`,
+              transition: 'height 0.5s ease'
+            }} />
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: '12px' }}>
+        {days.map((day, i) => (
+          <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: '11px', color: '#999', fontWeight: '600' }}>
+            {day}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Stat Mini Card
+const StatMini = ({ icon, value, label }) => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+    <span style={{ fontSize: '20px' }}>{icon}</span>
+    <div>
+      <p style={{ fontSize: '24px', fontWeight: '800', margin: 0, color: '#2D2D3A' }}>{value}</p>
+      <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>{label}</p>
+    </div>
+  </div>
+);
+
+// Opportunity Card for Dark Section
+const OpportunityMini = ({ opportunity, index, onApply }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const icons = ['💄', '👗', '💪', '🍕', '📱', '✈️'];
+  
+  return (
+    <div
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={() => onApply(opportunity)}
       style={{
-        padding: '0', overflow: 'hidden',
-        animation: `popIn 0.5s ease ${index * 0.1}s both`,
-        transform: isHovered ? 'translate(-6px, -6px) rotate(-1deg)' : 'none',
-        boxShadow: isHovered ? '14px 14px 0 #2D3142' : '8px 8px 0 #2D3142'
+        display: 'flex', alignItems: 'center', gap: '14px',
+        padding: '14px 16px', borderRadius: '14px',
+        background: isHovered ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)',
+        cursor: 'pointer', transition: 'all 0.2s',
+        animation: `slideIn 0.4s ease ${index * 0.1}s both`
       }}
     >
-      {/* Header */}
-      <div style={{ background: bgColor, padding: '20px', borderBottom: '4px solid #2D3142' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <span className="tag tag-hot" style={{ marginBottom: '10px', display: 'inline-block' }}>🔥 HOT</span>
-            <h3 style={{ 
-              fontFamily: 'Bebas Neue', fontSize: '28px', margin: '8px 0 0',
-              color: '#2D3142', letterSpacing: '1px'
-            }}>{opportunity.clientName}</h3>
-          </div>
-          <div style={{
-            width: '60px', height: '60px', background: 'white',
-            border: '3px solid #2D3142', display: 'flex',
-            alignItems: 'center', justifyContent: 'center',
-            fontSize: '28px', fontWeight: '700', transform: 'rotate(5deg)'
-          }}>
-            {opportunity.clientName?.charAt(0)}
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: '10px', marginTop: '12px', flexWrap: 'wrap' }}>
-          <span className="tag" style={{ background: 'white' }}>{opportunity.niche || 'Lifestyle'}</span>
-          <span className="tag" style={{ background: 'white' }}>{opportunity.platform || 'TikTok'}</span>
-        </div>
+      <div style={{
+        width: '42px', height: '42px', borderRadius: '12px',
+        background: 'rgba(245, 200, 66, 0.2)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: '20px'
+      }}>
+        {icons[index % icons.length]}
       </div>
-      
-      {/* Body */}
-      <div style={{ padding: '20px', background: 'white' }}>
-        <p style={{ fontSize: '14px', color: '#444', lineHeight: 1.6, marginBottom: '16px' }}>
-          {opportunity.description || 'Tražimo kreativne influensere! Prijavi se i pokaži svoj stil.'}
+      <div style={{ flex: 1 }}>
+        <p style={{ fontSize: '14px', fontWeight: '600', margin: '0 0 3px', color: 'white' }}>
+          {opportunity.clientName}
         </p>
-        
-        <div style={{ 
-          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', 
-          marginBottom: '20px', padding: '16px', background: '#FFFBF5',
-          border: '3px solid #2D3142'
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <p style={{ fontFamily: 'Bebas Neue', fontSize: '11px', color: '#666', letterSpacing: '1px' }}>HONORAR</p>
-            <p style={{ fontFamily: 'Bebas Neue', fontSize: '22px', color: '#2D3142', margin: '4px 0 0' }}>
-              {(opportunity.payment / 1000).toFixed(0)}K
-            </p>
-          </div>
-          <div style={{ textAlign: 'center', borderLeft: '2px solid #2D3142', borderRight: '2px solid #2D3142' }}>
-            <p style={{ fontFamily: 'Bebas Neue', fontSize: '11px', color: '#666', letterSpacing: '1px' }}>VIEWS</p>
-            <p style={{ fontFamily: 'Bebas Neue', fontSize: '22px', color: '#2D3142', margin: '4px 0 0' }}>
-              {formatNumber(opportunity.viewsRequired)}
-            </p>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <p style={{ fontFamily: 'Bebas Neue', fontSize: '11px', color: '#666', letterSpacing: '1px' }}>ROK</p>
-            <p style={{ fontFamily: 'Bebas Neue', fontSize: '22px', color: '#2D3142', margin: '4px 0 0' }}>
-              {formatDate(opportunity.deadline)}
-            </p>
-          </div>
-        </div>
-        
-        {showNote && (
-          <div style={{ marginBottom: '16px', animation: 'slideUp 0.3s ease' }}>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Zašto si TI pravi/a za ovaj posao? 💪"
-              style={{ width: '100%', height: '80px', resize: 'none' }}
-            />
-          </div>
-        )}
-        
-        <div style={{ display: 'flex', gap: '10px' }}>
-          {!showNote ? (
-            <>
-              <button className="pop-button" onClick={() => setShowNote(true)} style={{ flex: 1 }}>
-                PRIJAVI SE ✨
-              </button>
-              <button className="pop-button yellow-button">INFO</button>
-            </>
-          ) : (
-            <>
-              <button className="pop-button green-button" onClick={() => onApply(opportunity, note)} style={{ flex: 1 }}>
-                POŠALJI 🚀
-              </button>
-              <button className="pop-button yellow-button" onClick={() => setShowNote(false)}>✕</button>
-            </>
-          )}
-        </div>
+        <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+          {opportunity.niche} • {formatCurrency(opportunity.payment)} RSD
+        </p>
+      </div>
+      <div style={{
+        width: '28px', height: '28px', borderRadius: '50%',
+        background: isHovered ? '#F5C842' : 'transparent',
+        border: isHovered ? 'none' : '2px solid rgba(255,255,255,0.2)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        transition: 'all 0.2s'
+      }}>
+        {isHovered && <span style={{ color: '#2D2D3A', fontSize: '14px' }}>→</span>}
       </div>
     </div>
   );
 };
 
-// Application Card - POP ART
-const ApplicationCard = ({ application, index }) => {
+// Application Row
+const ApplicationRow = ({ application, index }) => {
   const statusConfig = {
-    'Sent': { class: 'tag-pending', icon: '⏳', text: 'ČEKA SE' },
-    'Pending': { class: 'tag-pending', icon: '⏳', text: 'ČEKA SE' },
-    'Accepted': { class: 'tag-accepted', icon: '✅', text: 'PRIHVAĆENO' },
-    'Declined': { class: 'tag-declined', icon: '❌', text: 'ODBIJENO' }
+    'Pending': { bg: '#FFE082', color: '#5D4E37', text: 'Čeka se' },
+    'Sent': { bg: '#FFE082', color: '#5D4E37', text: 'Čeka se' },
+    'Accepted': { bg: '#A5D6A7', color: '#2E5A2E', text: 'Prihvaćeno' },
+    'Declined': { bg: '#FFAB91', color: '#5D3A3A', text: 'Odbijeno' }
   };
   const status = statusConfig[application.status] || statusConfig['Pending'];
   
   return (
-    <div className="brutalist-card" style={{ 
-      padding: '16px', display: 'flex', alignItems: 'center', gap: '14px',
-      animation: `slideUp 0.4s ease ${index * 0.1}s both`
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '14px',
+      padding: '12px 0', borderBottom: '1px solid rgba(0,0,0,0.05)',
+      animation: `fadeIn 0.4s ease ${index * 0.1}s both`
     }}>
       <div style={{
-        width: '50px', height: '50px', background: '#FFE66D',
-        border: '3px solid #2D3142', display: 'flex',
-        alignItems: 'center', justifyContent: 'center',
-        fontSize: '22px', fontWeight: '700'
+        width: '40px', height: '40px', borderRadius: '12px',
+        background: 'linear-gradient(135deg, #FFE8B8, #FFD98C)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: '16px', fontWeight: '700', color: '#5D4E37'
       }}>
         {application.clientName?.charAt(0)}
       </div>
       <div style={{ flex: 1 }}>
-        <h4 style={{ fontFamily: 'Bebas Neue', fontSize: '18px', margin: 0, letterSpacing: '1px' }}>
+        <p style={{ fontSize: '14px', fontWeight: '600', margin: '0 0 2px', color: '#2D2D3A' }}>
           {application.clientName}
-        </h4>
-        <p style={{ fontSize: '12px', color: '#666', margin: '2px 0 0' }}>
-          {getTimeAgo(application.dateApplied)}
         </p>
+        <p style={{ fontSize: '12px', color: '#999', margin: 0 }}>{getTimeAgo(application.dateApplied)}</p>
       </div>
-      <span className={`tag ${status.class}`}>{status.icon} {status.text}</span>
+      <span style={{
+        padding: '6px 14px', borderRadius: '100px', fontSize: '12px', fontWeight: '600',
+        background: status.bg, color: status.color
+      }}>
+        {status.text}
+      </span>
     </div>
   );
 };
 
-// Clip Card - POP ART
+// Clip Card
 const ClipCard = ({ clip, index }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const bgColors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E881', '#9B89B3'];
   
   return (
     <a href={clip.link} target="_blank" rel="noopener noreferrer"
@@ -512,45 +326,31 @@ const ClipCard = ({ clip, index }) => {
        onMouseLeave={() => setIsHovered(false)}
        style={{
          display: 'block', textDecoration: 'none',
-         animation: `popIn 0.5s ease ${index * 0.1}s both`
+         animation: `scaleIn 0.4s ease ${index * 0.1}s both`
        }}>
-      <div className="brutalist-card" style={{
-        overflow: 'hidden',
-        transform: isHovered ? 'translate(-4px, -4px) rotate(-2deg)' : 'none',
-        boxShadow: isHovered ? '12px 12px 0 #2D3142' : '8px 8px 0 #2D3142'
+      <div className="glass-card" style={{
+        overflow: 'hidden', padding: 0,
+        transform: isHovered ? 'translateY(-4px) scale(1.02)' : 'none'
       }}>
-        {/* Thumbnail */}
         <div style={{
-          height: '120px', background: bgColors[index % bgColors.length],
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          borderBottom: '4px solid #2D3142', position: 'relative'
+          height: '100px',
+          background: clip.platform === 'Tik Tok' 
+            ? 'linear-gradient(135deg, #69C9D0, #EE1D52)' 
+            : 'linear-gradient(135deg, #833AB4, #FD1D1D, #F77737)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
-          <span style={{ fontSize: '50px', animation: isHovered ? 'bounce 0.5s ease' : 'none' }}>
+          <span style={{ fontSize: '36px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}>
             {clip.platform === 'Tik Tok' ? '🎵' : '📸'}
           </span>
-          <div style={{
-            position: 'absolute', bottom: '8px', right: '8px',
-            background: '#2D3142', color: 'white', padding: '4px 10px',
-            fontFamily: 'Bebas Neue', fontSize: '12px', letterSpacing: '1px'
-          }}>
-            {clip.platform === 'Tik Tok' ? 'TIKTOK' : 'INSTAGRAM'}
-          </div>
         </div>
-        
-        {/* Info */}
-        <div style={{ padding: '14px', background: 'white' }}>
-          <p style={{ 
-            fontFamily: 'Bebas Neue', fontSize: '14px', margin: '0 0 8px',
-            color: '#2D3142', letterSpacing: '0.5px',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-          }}>
-            {clip.clientName || 'CLIP'}
+        <div style={{ padding: '14px' }}>
+          <p style={{ fontSize: '13px', fontWeight: '600', margin: '0 0 6px', color: '#2D2D3A', 
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {clip.clientName}
           </p>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: 'Bebas Neue', fontSize: '24px', color: '#FF6B6B' }}>
-              {formatNumber(clip.views)}
-            </span>
-            <span style={{ fontSize: '11px', color: '#999', fontWeight: '600' }}>{getTimeAgo(clip.publishDate)}</span>
+            <span style={{ fontSize: '18px', fontWeight: '800', color: '#F5C842' }}>{formatNumber(clip.views)}</span>
+            <span style={{ fontSize: '11px', color: '#999' }}>{getTimeAgo(clip.publishDate)}</span>
           </div>
         </div>
       </div>
@@ -558,186 +358,134 @@ const ClipCard = ({ clip, index }) => {
   );
 };
 
-// Earnings Section - POP ART
-const EarningsSection = ({ earnings = [], stats }) => {
-  const maxValue = Math.max(...earnings.map(e => e.amount), 1);
-  const barColors = ['#FF6B6B', '#FFE66D', '#4ECDC4', '#95E881', '#9B89B3', '#FF6B6B'];
-  
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
-      {/* Chart */}
-      <div className="brutalist-card" style={{ padding: '24px' }}>
-        <h3 style={{ fontFamily: 'Bebas Neue', fontSize: '24px', letterSpacing: '2px', marginBottom: '24px' }}>
-          📊 ZARADA PO MESECIMA
-        </h3>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', height: '160px' }}>
-          {earnings.slice(-6).map((item, i) => (
-            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-              <div style={{
-                width: '100%', background: barColors[i],
-                height: `${(item.amount / maxValue) * 100}%`, minHeight: '20px',
-                border: '3px solid #2D3142',
-                transition: 'height 0.5s ease',
-                animation: `slideUp 0.5s ease ${i * 0.1}s both`
-              }} />
-              <span style={{ fontFamily: 'Bebas Neue', fontSize: '12px', color: '#666' }}>{item.month}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-      
-      {/* Summary */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <div className="brutalist-card" style={{ padding: '20px', background: '#95E881' }}>
-          <p style={{ fontFamily: 'Bebas Neue', fontSize: '12px', letterSpacing: '2px', color: '#2D3142', opacity: 0.8 }}>
-            UKUPNO ZARAĐENO
-          </p>
-          <p style={{ fontFamily: 'Bebas Neue', fontSize: '36px', color: '#2D3142', margin: '8px 0 0' }}>
-            {formatCurrency(stats?.totalEarnings)}
-          </p>
-        </div>
-        <div className="brutalist-card" style={{ padding: '20px', background: '#FFE66D' }}>
-          <p style={{ fontFamily: 'Bebas Neue', fontSize: '12px', letterSpacing: '2px', color: '#2D3142', opacity: 0.8 }}>
-            ČEKA ISPLATU
-          </p>
-          <p style={{ fontFamily: 'Bebas Neue', fontSize: '36px', color: '#2D3142', margin: '8px 0 0' }}>
-            {formatCurrency(stats?.pendingPayment)}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Profile Section - POP ART
-const ProfileSection = ({ profile, onUpdate }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState(profile || {});
-  
-  const fields = [
-    { key: 'phone', label: 'TELEFON', icon: '📱' },
-    { key: 'city', label: 'GRAD', icon: '📍' },
-    { key: 'tiktokHandle', label: 'TIKTOK', icon: '🎵', placeholder: '@username' },
-    { key: 'instagramHandle', label: 'INSTAGRAM', icon: '📸', placeholder: '@username' },
-    { key: 'shirtSize', label: 'MAJICA', icon: '👕', type: 'select', options: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
-    { key: 'pantsSize', label: 'PANTALONE', icon: '👖' },
-    { key: 'shoeSize', label: 'CIPELE', icon: '👟' }
-  ];
-  
-  const categories = ['Beauty', 'Fashion', 'Fitness', 'Food', 'Tech', 'Travel', 'Gaming', 'Lifestyle', 'Parenting', 'Comedy'];
-  
-  return (
-    <div className="brutalist-card" style={{ padding: '28px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h2 style={{ fontFamily: 'Bebas Neue', fontSize: '28px', letterSpacing: '2px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          👤 MOJ PROFIL
-        </h2>
-        <button 
-          className={`pop-button ${isEditing ? 'green-button' : 'yellow-button'}`}
-          onClick={() => {
-            if (isEditing) onUpdate(formData);
-            setIsEditing(!isEditing);
-          }}
-          style={{ padding: '10px 20px', fontSize: '14px' }}
-        >
-          {isEditing ? '💾 SAČUVAJ' : '✏️ IZMENI'}
-        </button>
-      </div>
-      
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '24px' }}>
-        {fields.map(field => (
-          <div key={field.key} style={{ 
-            display: 'flex', alignItems: 'center', gap: '12px',
-            padding: '14px', background: '#FFFBF5', border: '3px solid #2D3142'
-          }}>
-            <span style={{ fontSize: '24px' }}>{field.icon}</span>
-            <div style={{ flex: 1 }}>
-              <label style={{ fontFamily: 'Bebas Neue', fontSize: '11px', color: '#666', letterSpacing: '1px' }}>
-                {field.label}
-              </label>
-              {isEditing ? (
-                field.type === 'select' ? (
-                  <select value={formData[field.key] || ''} onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
-                          style={{ width: '100%', padding: '6px', marginTop: '4px' }}>
-                    <option value="">Izaberi...</option>
-                    {field.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                  </select>
-                ) : (
-                  <input type="text" value={formData[field.key] || ''} placeholder={field.placeholder}
-                         onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
-                         style={{ width: '100%', padding: '6px', marginTop: '4px' }} />
-                )
-              ) : (
-                <p style={{ fontFamily: 'Bebas Neue', fontSize: '18px', color: '#2D3142', margin: '4px 0 0' }}>
-                  {formData[field.key] || '—'}
-                </p>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-      
-      {/* Categories */}
-      <div style={{ padding: '16px', background: '#FFFBF5', border: '3px solid #2D3142' }}>
-        <label style={{ fontFamily: 'Bebas Neue', fontSize: '14px', letterSpacing: '2px', color: '#666', display: 'block', marginBottom: '12px' }}>
-          🏷️ KATEGORIJE
-        </label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          {categories.map(cat => {
-            const selected = (formData.categories || []).includes(cat);
-            return (
-              <button key={cat} onClick={() => {
-                if (!isEditing) return;
-                const current = formData.categories || [];
-                setFormData({
-                  ...formData,
-                  categories: selected ? current.filter(x => x !== cat) : [...current, cat]
-                });
-              }} style={{
-                padding: '8px 16px', fontFamily: 'Bebas Neue', fontSize: '14px', letterSpacing: '1px',
-                background: selected ? '#FF6B6B' : 'white', color: selected ? 'white' : '#2D3142',
-                border: '3px solid #2D3142', cursor: isEditing ? 'pointer' : 'default',
-                boxShadow: selected ? '3px 3px 0 #2D3142' : 'none',
-                transition: 'all 0.2s'
-              }}>
-                {cat.toUpperCase()}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Navigation Tab - POP ART
-const NavTab = ({ icon, label, isActive, onClick, badge }) => (
-  <button onClick={onClick} style={{
-    display: 'flex', alignItems: 'center', gap: '10px',
-    padding: '14px 24px', border: '4px solid #2D3142',
-    background: isActive ? '#FF6B6B' : 'white',
-    color: isActive ? 'white' : '#2D3142',
-    fontFamily: 'Bebas Neue', fontSize: '16px', letterSpacing: '2px',
-    cursor: 'pointer', position: 'relative',
-    boxShadow: isActive ? '4px 4px 0 #2D3142' : 'none',
-    transform: isActive ? 'translate(-2px, -2px)' : 'none',
-    transition: 'all 0.2s'
+// Profile Field
+const ProfileField = ({ icon, label, value, isEditing, onChange, type = 'text', options }) => (
+  <div style={{ 
+    display: 'flex', alignItems: 'center', gap: '14px',
+    padding: '16px', background: 'rgba(255,255,255,0.5)', borderRadius: '16px'
   }}>
-    <span style={{ fontSize: '20px' }}>{icon}</span>
-    <span>{label}</span>
+    <span style={{ fontSize: '22px' }}>{icon}</span>
+    <div style={{ flex: 1 }}>
+      <label style={{ fontSize: '11px', color: '#888', fontWeight: '600', display: 'block', marginBottom: '4px' }}>
+        {label}
+      </label>
+      {isEditing ? (
+        type === 'select' ? (
+          <select value={value || ''} onChange={onChange} style={{ width: '100%', padding: '8px 12px' }}>
+            <option value="">Izaberi...</option>
+            {options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+          </select>
+        ) : (
+          <input type={type} value={value || ''} onChange={onChange} 
+                 style={{ width: '100%', padding: '8px 12px' }} />
+        )
+      ) : (
+        <p style={{ fontSize: '15px', fontWeight: '600', color: '#2D2D3A', margin: 0 }}>{value || '—'}</p>
+      )}
+    </div>
+  </div>
+);
+
+// Navigation Pill
+const NavPill = ({ label, isActive, onClick, badge }) => (
+  <button onClick={onClick} style={{
+    padding: '10px 20px', borderRadius: '100px', border: 'none',
+    background: isActive ? '#2D2D3A' : 'transparent',
+    color: isActive ? 'white' : '#666',
+    fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+    transition: 'all 0.2s', position: 'relative'
+  }}>
+    {label}
     {badge > 0 && (
       <span style={{
-        position: 'absolute', top: '-10px', right: '-10px',
-        width: '28px', height: '28px', background: '#FFE66D',
-        border: '3px solid #2D3142', fontFamily: 'Bebas Neue',
-        fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        animation: 'bounce 1s ease infinite'
-      }}>
-        {badge}
-      </span>
+        position: 'absolute', top: '-4px', right: '-4px',
+        width: '20px', height: '20px', borderRadius: '50%',
+        background: '#F5C842', color: '#2D2D3A',
+        fontSize: '11px', fontWeight: '700',
+        display: 'flex', alignItems: 'center', justifyContent: 'center'
+      }}>{badge}</span>
     )}
   </button>
 );
+
+// Application Modal
+const ApplyModal = ({ opportunity, onClose, onSubmit }) => {
+  const [note, setNote] = useState('');
+  
+  if (!opportunity) return null;
+  
+  return (
+    <>
+      <div onClick={onClose} style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+        backdropFilter: 'blur(8px)', zIndex: 1000
+      }} />
+      <div style={{
+        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+        width: '460px', maxWidth: '90vw', zIndex: 1001,
+        animation: 'scaleIn 0.3s ease'
+      }}>
+        <div className="glass-card" style={{ padding: '32px', background: 'white' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+            <div>
+              <h2 style={{ fontSize: '24px', fontWeight: '800', margin: '0 0 4px', color: '#2D2D3A' }}>
+                {opportunity.clientName}
+              </h2>
+              <p style={{ fontSize: '14px', color: '#888', margin: 0 }}>{opportunity.niche} • {opportunity.platform}</p>
+            </div>
+            <button onClick={onClose} style={{
+              width: '36px', height: '36px', borderRadius: '50%',
+              background: 'rgba(0,0,0,0.05)', border: 'none', cursor: 'pointer',
+              fontSize: '18px', color: '#666'
+            }}>✕</button>
+          </div>
+          
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px',
+            padding: '20px', background: 'linear-gradient(135deg, #FFF8E7, #FFE8B8)',
+            borderRadius: '16px', marginBottom: '24px'
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: '11px', color: '#5D4E37', fontWeight: '600', margin: '0 0 4px' }}>HONORAR</p>
+              <p style={{ fontSize: '22px', fontWeight: '800', color: '#2D2D3A', margin: 0 }}>{formatCurrency(opportunity.payment)}</p>
+            </div>
+            <div style={{ textAlign: 'center', borderLeft: '1px solid rgba(0,0,0,0.1)', borderRight: '1px solid rgba(0,0,0,0.1)' }}>
+              <p style={{ fontSize: '11px', color: '#5D4E37', fontWeight: '600', margin: '0 0 4px' }}>VIEWS</p>
+              <p style={{ fontSize: '22px', fontWeight: '800', color: '#2D2D3A', margin: 0 }}>{formatNumber(opportunity.viewsRequired)}</p>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: '11px', color: '#5D4E37', fontWeight: '600', margin: '0 0 4px' }}>ROK</p>
+              <p style={{ fontSize: '22px', fontWeight: '800', color: '#2D2D3A', margin: 0 }}>{formatDate(opportunity.deadline)}</p>
+            </div>
+          </div>
+          
+          <p style={{ fontSize: '14px', color: '#666', lineHeight: 1.6, marginBottom: '20px' }}>
+            {opportunity.description}
+          </p>
+          
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ fontSize: '13px', fontWeight: '600', color: '#2D2D3A', display: 'block', marginBottom: '8px' }}>
+              💬 Poruka brendu (opciono)
+            </label>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Zašto si ti pravi/a za ovaj posao? Npr: 'Idem na more sledeće nedelje - savršeno za ovaj brend!'"
+              style={{ width: '100%', height: '100px', resize: 'none' }}
+            />
+          </div>
+          
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button className="btn-primary" onClick={() => onSubmit(opportunity, note)} style={{ flex: 1 }}>
+              ✨ Prijavi se
+            </button>
+            <button className="btn-secondary" onClick={onClose}>Otkaži</button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
 
 // ============ MAIN COMPONENT ============
 export default function InfluencerDashboard() {
@@ -746,7 +494,8 @@ export default function InfluencerDashboard() {
   
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('opportunities');
+  const [activeSection, setActiveSection] = useState('dashboard');
+  const [selectedOpportunity, setSelectedOpportunity] = useState(null);
   
   useEffect(() => {
     if (!slug) return;
@@ -754,10 +503,13 @@ export default function InfluencerDashboard() {
       setData({
         influencer: {
           name: 'Marija Petrović',
+          photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
           tiktokHandle: '@marija_p',
           instagramHandle: '@marija.petrovic',
           city: 'Beograd',
+          phone: '+381 64 123 4567',
           shirtSize: 'M',
+          pantsSize: '38',
           shoeSize: '39',
           categories: ['Beauty', 'Fashion', 'Lifestyle']
         },
@@ -766,12 +518,24 @@ export default function InfluencerDashboard() {
           totalViews: 2450000,
           totalClips: 24,
           avgViewsPerClip: 102000,
-          pendingPayment: 15000
+          pendingPayment: 15000,
+          completionRate: 92
         },
+        weeklyActivity: [
+          { value: 30, highlight: false },
+          { value: 80, highlight: true },
+          { value: 45, highlight: false },
+          { value: 90, highlight: true },
+          { value: 60, highlight: false },
+          { value: 20, highlight: false },
+          { value: 10, highlight: false }
+        ],
         opportunities: [
-          { id: 1, clientName: 'Nivea Serbia', niche: 'Beauty', platform: 'TikTok', payment: 8000, viewsRequired: 100000, deadline: '2025-01-15', description: 'Tražimo kreativce za zimsku kampanju hidratacije!' },
-          { id: 2, clientName: 'Fashion Nova', niche: 'Fashion', platform: 'Instagram', payment: 12000, viewsRequired: 150000, deadline: '2025-01-20', description: 'Nova kolekcija - OOTD content wanted!' },
-          { id: 3, clientName: 'Protein World', niche: 'Fitness', platform: 'TikTok', payment: 6000, viewsRequired: 80000, deadline: '2025-01-10', description: 'Fitness influenseri za protein šejk promociju.' }
+          { id: 1, clientName: 'Nivea Serbia', niche: 'Beauty', platform: 'TikTok', payment: 8000, viewsRequired: 100000, deadline: '2025-01-15', description: 'Tražimo kreativce za zimsku kampanju hidratacije. Potreban autentičan sadržaj o nezi kože!' },
+          { id: 2, clientName: 'Fashion Nova', niche: 'Fashion', platform: 'Instagram', payment: 12000, viewsRequired: 150000, deadline: '2025-01-20', description: 'Nova kolekcija - OOTD content za promociju!' },
+          { id: 3, clientName: 'Protein World', niche: 'Fitness', platform: 'TikTok', payment: 6000, viewsRequired: 80000, deadline: '2025-01-10', description: 'Fitness influenseri za protein šejk promociju.' },
+          { id: 4, clientName: 'Samsung Serbia', niche: 'Tech', platform: 'TikTok', payment: 15000, viewsRequired: 200000, deadline: '2025-01-25', description: 'Unboxing i review novog Galaxy telefona.' },
+          { id: 5, clientName: 'Booking.com', niche: 'Travel', platform: 'Instagram', payment: 10000, viewsRequired: 120000, deadline: '2025-01-18', description: 'Travel content za zimske destinacije.' }
         ],
         applications: [
           { id: 1, clientName: 'Samsung Serbia', status: 'Accepted', dateApplied: '2024-12-20' },
@@ -797,15 +561,24 @@ export default function InfluencerDashboard() {
     }, 800);
   }, [slug]);
   
+  const handleApply = (opportunity, note) => {
+    console.log('Applying:', opportunity.clientName, note);
+    alert(`✅ Prijava za ${opportunity.clientName} je poslata!`);
+    setSelectedOpportunity(null);
+  };
+  
   if (loading) {
     return (
       <>
         <GlobalStyles />
-        <PopArtBackground />
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="brutalist-card" style={{ padding: '40px', textAlign: 'center', animation: 'bounce 1s ease infinite' }}>
-            <span style={{ fontSize: '60px', display: 'block', marginBottom: '16px' }}>🎬</span>
-            <p style={{ fontFamily: 'Bebas Neue', fontSize: '24px', letterSpacing: '3px' }}>LOADING...</p>
+          <div className="glass-card" style={{ padding: '40px', textAlign: 'center' }}>
+            <div style={{
+              width: '50px', height: '50px', borderRadius: '50%',
+              border: '3px solid #eee', borderTopColor: '#F5C842',
+              animation: 'spin 1s linear infinite', margin: '0 auto 16px'
+            }} />
+            <p style={{ color: '#666', fontWeight: '500' }}>Učitavanje...</p>
           </div>
         </div>
       </>
@@ -815,92 +588,323 @@ export default function InfluencerDashboard() {
   return (
     <>
       <Head>
-        <title>{data?.influencer?.name} | VOICE Creator Hub</title>
+        <title>{data?.influencer?.name} | VOICE</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <GlobalStyles />
-      <PopArtBackground />
       
-      <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
-        <MarqueeBanner />
-        
-        {/* Header */}
-        <header style={{
-          padding: '20px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          background: 'white', borderBottom: '4px solid #2D3142'
-        }}>
-          <TextLogo />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ textAlign: 'right' }}>
-              <p style={{ fontFamily: 'Bebas Neue', fontSize: '18px', margin: 0, letterSpacing: '1px' }}>{data?.influencer?.name}</p>
-              <p style={{ fontSize: '12px', color: '#666', margin: 0 }}>{data?.influencer?.tiktokHandle}</p>
+      <div style={{ minHeight: '100vh', padding: '24px' }}>
+        <div style={{ maxWidth: '1500px', margin: '0 auto' }}>
+          
+          {/* Header */}
+          <header className="glass-card" style={{
+            padding: '16px 28px', marginBottom: '24px',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{
+                width: '36px', height: '36px', borderRadius: '10px',
+                background: 'linear-gradient(135deg, #3D3B73, #5D5B93)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <span style={{ color: 'white', fontWeight: '800', fontSize: '14px' }}>V</span>
+              </div>
+              <span style={{ fontSize: '20px', fontWeight: '800', color: '#3D3B73' }}>voice</span>
             </div>
-            <div style={{
-              width: '50px', height: '50px', background: '#FF6B6B',
-              border: '4px solid #2D3142', display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-              fontSize: '22px', fontWeight: '700', color: 'white'
-            }}>
-              {data?.influencer?.name?.charAt(0)}
+            
+            <div style={{ display: 'flex', background: 'rgba(0,0,0,0.04)', borderRadius: '100px', padding: '4px' }}>
+              <NavPill label="Dashboard" isActive={activeSection === 'dashboard'} onClick={() => setActiveSection('dashboard')} />
+              <NavPill label="Prilike" isActive={activeSection === 'opportunities'} onClick={() => setActiveSection('opportunities')} badge={data?.opportunities?.length} />
+              <NavPill label="Prijave" isActive={activeSection === 'applications'} onClick={() => setActiveSection('applications')} />
+              <NavPill label="Klipovi" isActive={activeSection === 'clips'} onClick={() => setActiveSection('clips')} />
+              <NavPill label="Profil" isActive={activeSection === 'profile'} onClick={() => setActiveSection('profile')} />
             </div>
-          </div>
-        </header>
-        
-        <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px 40px' }}>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button style={{ 
+                width: '40px', height: '40px', borderRadius: '12px', border: 'none',
+                background: 'rgba(0,0,0,0.04)', cursor: 'pointer', fontSize: '18px'
+              }}>🔔</button>
+              <button style={{ 
+                width: '40px', height: '40px', borderRadius: '12px', border: 'none',
+                background: 'rgba(0,0,0,0.04)', cursor: 'pointer', fontSize: '18px'
+              }}>⚙️</button>
+            </div>
+          </header>
           
-          {/* Stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '40px' }}>
-            <FlipStatCard icon="💰" label="UKUPNA ZARADA" value={formatCurrency(data?.stats?.totalEarnings)} color="green" delay={0} />
-            <FlipStatCard icon="👁️" label="UKUPNI VIEWS" value={formatNumber(data?.stats?.totalViews)} color="yellow" delay={100} items={data?.clips} />
-            <FlipStatCard icon="🎬" label="KLIPOVA" value={data?.stats?.totalClips} color="red" delay={200} items={data?.clips} />
-            <FlipStatCard icon="📈" label="PROSEK/KLIP" value={formatNumber(data?.stats?.avgViewsPerClip)} subValue="views" color="teal" delay={300} />
-          </div>
+          {activeSection === 'dashboard' && (
+            <>
+              {/* Welcome + Quick Stats */}
+              <div className="glass-card warm-gradient" style={{ padding: '28px', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h1 style={{ fontSize: '32px', fontWeight: '300', margin: '0 0 8px', color: '#2D2D3A' }}>
+                      Dobrodošla, <strong>{data?.influencer?.name?.split(' ')[0]}</strong>
+                    </h1>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <span className="tag tag-yellow">🔥 {data?.opportunities?.length} novih prilika</span>
+                      <span className="tag tag-gray">📊 92% completion rate</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '40px' }}>
+                    <StatMini icon="👥" value={formatNumber(data?.stats?.totalViews)} label="Total Views" />
+                    <StatMini icon="🎬" value={data?.stats?.totalClips} label="Klipova" />
+                    <StatMini icon="💰" value={formatNumber(data?.stats?.totalEarnings)} label="Zarada (RSD)" />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Main Grid - Bento Layout */}
+              <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr 320px', gap: '24px' }}>
+                
+                {/* Left Column - Profile Card */}
+                <div>
+                  <div className="glass-card" style={{ padding: '0', overflow: 'hidden', marginBottom: '24px' }}>
+                    {/* Profile Image */}
+                    <div style={{ position: 'relative', height: '280px' }}>
+                      <img 
+                        src={data?.influencer?.photo}
+                        alt={data?.influencer?.name}
+                        style={{
+                          width: '100%', height: '100%', objectFit: 'cover',
+                          filter: 'brightness(0.95)'
+                        }}
+                      />
+                      <div style={{
+                        position: 'absolute', bottom: 0, left: 0, right: 0,
+                        background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+                        padding: '60px 20px 20px', color: 'white'
+                      }}>
+                        <h2 style={{ fontSize: '22px', fontWeight: '700', margin: '0 0 4px' }}>
+                          {data?.influencer?.name}
+                        </h2>
+                        <p style={{ fontSize: '13px', opacity: 0.8, margin: 0 }}>
+                          {data?.influencer?.tiktokHandle}
+                        </p>
+                      </div>
+                      <div style={{
+                        position: 'absolute', bottom: '20px', right: '20px',
+                        background: '#F5C842', padding: '8px 16px', borderRadius: '100px',
+                        fontSize: '14px', fontWeight: '700', color: '#2D2D3A'
+                      }}>
+                        {formatCurrency(data?.stats?.pendingPayment)} RSD
+                      </div>
+                    </div>
+                    
+                    {/* Quick Info */}
+                    <div style={{ padding: '20px' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {data?.influencer?.categories?.map(cat => (
+                          <span key={cat} style={{
+                            padding: '6px 12px', borderRadius: '100px',
+                            background: 'rgba(0,0,0,0.05)', fontSize: '12px',
+                            fontWeight: '600', color: '#666'
+                          }}>{cat}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Moje prijave */}
+                  <div className="glass-card" style={{ padding: '20px' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 16px', color: '#2D2D3A' }}>
+                      📋 Moje prijave
+                    </h3>
+                    {data?.applications?.map((app, i) => (
+                      <ApplicationRow key={app.id} application={app} index={i} />
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Middle Column - Stats & Activity */}
+                <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+                    {/* Progress Card */}
+                    <div className="glass-card" style={{ padding: '24px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: '700', margin: 0, color: '#2D2D3A' }}>Aktivnost</h3>
+                        <button style={{
+                          width: '32px', height: '32px', borderRadius: '50%',
+                          background: 'rgba(0,0,0,0.05)', border: 'none', cursor: 'pointer'
+                        }}>↗</button>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                        <span style={{ fontSize: '36px', fontWeight: '800', color: '#2D2D3A' }}>
+                          {data?.stats?.totalClips}
+                        </span>
+                        <div>
+                          <span style={{ fontSize: '14px', color: '#888' }}>klipova</span>
+                          <br />
+                          <span style={{ fontSize: '12px', color: '#7DD87D', fontWeight: '600' }}>ovog meseca</span>
+                        </div>
+                      </div>
+                      <ProgressBarDots data={data?.weeklyActivity || []} />
+                    </div>
+                    
+                    {/* Circular Progress */}
+                    <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                      <CircularProgress 
+                        percent={data?.stats?.completionRate || 0} 
+                        size={140} 
+                        value={`${data?.stats?.completionRate}%`}
+                        label="Completion"
+                      />
+                      <p style={{ fontSize: '14px', color: '#888', marginTop: '16px', textAlign: 'center' }}>
+                        Uspešno završenih kampanja
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Recent Clips */}
+                  <div className="glass-card" style={{ padding: '24px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                      <h3 style={{ fontSize: '16px', fontWeight: '700', margin: 0, color: '#2D2D3A' }}>🎬 Poslednji klipovi</h3>
+                      <button className="btn-secondary" onClick={() => setActiveSection('clips')}>Vidi sve →</button>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+                      {data?.clips?.slice(0, 4).map((clip, i) => (
+                        <ClipCard key={clip.id} clip={clip} index={i} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Right Column - Opportunities (Dark) */}
+                <div className="dark-card" style={{ padding: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <div>
+                      <h3 style={{ fontSize: '18px', fontWeight: '700', margin: '0 0 4px' }}>Prilike</h3>
+                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+                        {data?.opportunities?.length} dostupnih
+                      </p>
+                    </div>
+                    <span style={{
+                      background: '#F5C842', color: '#2D2D3A',
+                      padding: '6px 12px', borderRadius: '100px',
+                      fontSize: '13px', fontWeight: '700'
+                    }}>{data?.opportunities?.length}</span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {data?.opportunities?.slice(0, 5).map((opp, i) => (
+                      <OpportunityMini key={opp.id} opportunity={opp} index={i} onApply={setSelectedOpportunity} />
+                    ))}
+                  </div>
+                  
+                  <button className="btn-primary" onClick={() => setActiveSection('opportunities')} 
+                          style={{ width: '100%', marginTop: '20px' }}>
+                    Vidi sve prilike →
+                  </button>
+                </div>
+                
+              </div>
+            </>
+          )}
           
-          {/* Navigation */}
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '32px', flexWrap: 'wrap' }}>
-            <NavTab icon="🔥" label="PRILIKE" isActive={activeTab === 'opportunities'} onClick={() => setActiveTab('opportunities')} badge={data?.opportunities?.length} />
-            <NavTab icon="📋" label="PRIJAVE" isActive={activeTab === 'applications'} onClick={() => setActiveTab('applications')} />
-            <NavTab icon="🎬" label="KLIPOVI" isActive={activeTab === 'clips'} onClick={() => setActiveTab('clips')} />
-            <NavTab icon="💳" label="ZARADA" isActive={activeTab === 'earnings'} onClick={() => setActiveTab('earnings')} />
-            <NavTab icon="👤" label="PROFIL" isActive={activeTab === 'profile'} onClick={() => setActiveTab('profile')} />
-          </div>
-          
-          {/* Content */}
-          {activeTab === 'opportunities' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '24px' }}>
+          {activeSection === 'opportunities' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '24px' }}>
               {data?.opportunities?.map((opp, i) => (
-                <OpportunityCard key={opp.id} opportunity={opp} index={i} onApply={(o, n) => alert(`Prijava poslata za ${o.clientName}!`)} />
+                <div key={opp.id} className="glass-card" style={{ padding: '24px', animation: `fadeIn 0.4s ease ${i * 0.1}s both` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <span className="tag tag-yellow">🔥 Novo</span>
+                    <span style={{ fontSize: '13px', color: '#888' }}>{opp.platform}</span>
+                  </div>
+                  <h3 style={{ fontSize: '22px', fontWeight: '700', margin: '0 0 8px', color: '#2D2D3A' }}>{opp.clientName}</h3>
+                  <p style={{ fontSize: '14px', color: '#666', lineHeight: 1.6, marginBottom: '20px' }}>{opp.description}</p>
+                  <div style={{
+                    display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px',
+                    padding: '16px', background: 'linear-gradient(135deg, #FFF8E7, #FFE8B8)',
+                    borderRadius: '14px', marginBottom: '20px'
+                  }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <p style={{ fontSize: '10px', color: '#5D4E37', fontWeight: '600', margin: '0 0 4px' }}>HONORAR</p>
+                      <p style={{ fontSize: '18px', fontWeight: '800', color: '#2D2D3A', margin: 0 }}>{formatCurrency(opp.payment)}</p>
+                    </div>
+                    <div style={{ textAlign: 'center', borderLeft: '1px solid rgba(0,0,0,0.1)', borderRight: '1px solid rgba(0,0,0,0.1)' }}>
+                      <p style={{ fontSize: '10px', color: '#5D4E37', fontWeight: '600', margin: '0 0 4px' }}>VIEWS</p>
+                      <p style={{ fontSize: '18px', fontWeight: '800', color: '#2D2D3A', margin: 0 }}>{formatNumber(opp.viewsRequired)}</p>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <p style={{ fontSize: '10px', color: '#5D4E37', fontWeight: '600', margin: '0 0 4px' }}>ROK</p>
+                      <p style={{ fontSize: '18px', fontWeight: '800', color: '#2D2D3A', margin: 0 }}>{formatDate(opp.deadline)}</p>
+                    </div>
+                  </div>
+                  <button className="btn-primary" onClick={() => setSelectedOpportunity(opp)} style={{ width: '100%' }}>
+                    ✨ Prijavi se
+                  </button>
+                </div>
               ))}
             </div>
           )}
           
-          {activeTab === 'applications' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '700px' }}>
-              {data?.applications?.map((app, i) => <ApplicationCard key={app.id} application={app} index={i} />)}
+          {activeSection === 'applications' && (
+            <div className="glass-card" style={{ padding: '32px', maxWidth: '800px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: '700', margin: '0 0 24px', color: '#2D2D3A' }}>📋 Moje prijave</h2>
+              {data?.applications?.map((app, i) => (
+                <ApplicationRow key={app.id} application={app} index={i} />
+              ))}
             </div>
           )}
           
-          {activeTab === 'clips' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '24px' }}>
+          {activeSection === 'clips' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
               {data?.clips?.map((clip, i) => <ClipCard key={clip.id} clip={clip} index={i} />)}
             </div>
           )}
           
-          {activeTab === 'earnings' && <EarningsSection earnings={data?.earnings} stats={data?.stats} />}
+          {activeSection === 'profile' && (
+            <div className="glass-card" style={{ padding: '32px', maxWidth: '900px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '32px' }}>
+                <img src={data?.influencer?.photo} alt="" style={{
+                  width: '100px', height: '100px', borderRadius: '24px', objectFit: 'cover'
+                }} />
+                <div>
+                  <h2 style={{ fontSize: '28px', fontWeight: '700', margin: '0 0 4px', color: '#2D2D3A' }}>
+                    {data?.influencer?.name}
+                  </h2>
+                  <p style={{ fontSize: '14px', color: '#888', margin: 0 }}>{data?.influencer?.tiktokHandle} • {data?.influencer?.city}</p>
+                </div>
+                <button className="btn-primary" style={{ marginLeft: 'auto' }}>✏️ Izmeni profil</button>
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                <ProfileField icon="📱" label="Telefon" value={data?.influencer?.phone} />
+                <ProfileField icon="📍" label="Grad" value={data?.influencer?.city} />
+                <ProfileField icon="🎵" label="TikTok" value={data?.influencer?.tiktokHandle} />
+                <ProfileField icon="📸" label="Instagram" value={data?.influencer?.instagramHandle} />
+                <ProfileField icon="👕" label="Veličina majice" value={data?.influencer?.shirtSize} />
+                <ProfileField icon="👖" label="Veličina pantalona" value={data?.influencer?.pantsSize} />
+                <ProfileField icon="👟" label="Broj cipela" value={data?.influencer?.shoeSize} />
+              </div>
+              
+              <div style={{ marginTop: '24px', padding: '20px', background: 'rgba(255,255,255,0.5)', borderRadius: '16px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '600', color: '#2D2D3A', display: 'block', marginBottom: '12px' }}>
+                  🏷️ Kategorije
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {['Beauty', 'Fashion', 'Fitness', 'Food', 'Tech', 'Travel', 'Gaming', 'Lifestyle'].map(cat => (
+                    <span key={cat} style={{
+                      padding: '10px 18px', borderRadius: '100px', fontSize: '13px', fontWeight: '600',
+                      background: data?.influencer?.categories?.includes(cat) ? '#F5C842' : 'white',
+                      color: data?.influencer?.categories?.includes(cat) ? '#2D2D3A' : '#888',
+                      cursor: 'pointer', transition: 'all 0.2s'
+                    }}>{cat}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
           
-          {activeTab === 'profile' && <ProfileSection profile={data?.influencer} onUpdate={(p) => setData({ ...data, influencer: { ...data.influencer, ...p } })} />}
-          
-        </main>
-        
-        {/* Footer */}
-        <footer style={{
-          padding: '20px 40px', textAlign: 'center',
-          background: '#2D3142', color: 'white',
-          fontFamily: 'Bebas Neue', letterSpacing: '3px', fontSize: '14px'
-        }}>
-          POWERED BY VOICE • © 2025
-        </footer>
+        </div>
       </div>
+      
+      {selectedOpportunity && (
+        <ApplyModal 
+          opportunity={selectedOpportunity} 
+          onClose={() => setSelectedOpportunity(null)}
+          onSubmit={handleApply}
+        />
+      )}
     </>
   );
 }
