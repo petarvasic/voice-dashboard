@@ -19,7 +19,15 @@ const formatPercent = (num) => {
 
 const formatDate = (dateStr) => {
   if (!dateStr) return '-';
-  const date = new Date(dateStr);
+  // Handle both YYYY-MM-DD and DD/MM/YYYY formats
+  let date;
+  if (dateStr.includes('/')) {
+    const parts = dateStr.split('/');
+    date = new Date(parts[2], parts[1] - 1, parts[0]);
+  } else {
+    date = new Date(dateStr);
+  }
+  if (isNaN(date.getTime())) return '-';
   return date.toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit' });
 };
 
@@ -341,28 +349,38 @@ const InfluencerRow = ({ influencer }) => {
         gap: '16px',
         alignItems: 'center',
         padding: '14px 16px',
-        background: isHovered ? 'rgba(255,255,255,0.03)' : 'transparent',
+        background: isHovered ? 'rgba(139, 92, 246, 0.1)' : 'transparent',
         borderRadius: '10px',
-        transition: 'background 0.15s ease'
+        transition: 'background 0.15s ease',
+        borderBottom: '1px solid rgba(255,255,255,0.05)'
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <div style={{
-          width: '36px',
-          height: '36px',
+          width: '40px',
+          height: '40px',
           borderRadius: '50%',
           background: 'linear-gradient(135deg, #ec4899, #8b5cf6)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '14px',
+          fontSize: '16px',
           fontWeight: '600',
-          color: '#fff'
+          color: '#fff',
+          flexShrink: 0
         }}>
-          {influencer.name?.charAt(0) || '?'}
+          {influencer.name?.charAt(0)?.toUpperCase() || '?'}
         </div>
-        <div>
-          <p style={{ fontSize: '14px', fontWeight: '600', margin: 0, color: '#fff' }}>
+        <div style={{ minWidth: 0 }}>
+          <p style={{ 
+            fontSize: '14px', 
+            fontWeight: '600', 
+            margin: 0, 
+            color: '#fff',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}>
             {influencer.name}
           </p>
           {influencer.tier && (
@@ -377,20 +395,29 @@ const InfluencerRow = ({ influencer }) => {
         </div>
       </div>
       <div>
-        <p style={{ fontSize: '14px', fontWeight: '600', margin: 0, color: '#fff' }}>
+        <p style={{ fontSize: '16px', fontWeight: '700', margin: 0, color: '#fff' }}>
           {influencer.clips || 0}
         </p>
         <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: '2px 0 0' }}>klipova</p>
       </div>
       <div>
-        <p style={{ fontSize: '14px', fontWeight: '600', margin: 0, color: '#fff' }}>
+        <p style={{ 
+          fontSize: '16px', 
+          fontWeight: '700', 
+          margin: 0, 
+          color: influencer.views >= 100000 ? '#22c55e' : '#fff' 
+        }}>
           {formatNumber(influencer.views)}
         </p>
         <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: '2px 0 0' }}>views</p>
       </div>
       <div>
-        <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-          {getDaysAgo(influencer.lastClipDate) || '-'}
+        <p style={{ 
+          fontSize: '12px', 
+          color: influencer.lastClipDate ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)', 
+          margin: 0 
+        }}>
+          {getDaysAgo(influencer.lastClipDate) || 'Nema klipova'}
         </p>
       </div>
     </div>
@@ -400,6 +427,7 @@ const InfluencerRow = ({ influencer }) => {
 // Clip Card
 const ClipCard = ({ clip }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const hasLink = clip.link && clip.link.length > 0;
   
   return (
     <div
@@ -410,12 +438,13 @@ const ClipCard = ({ clip }) => {
         alignItems: 'center',
         gap: '14px',
         padding: '14px 16px',
-        background: isHovered ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)',
+        background: isHovered ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)',
         borderRadius: '12px',
         transition: 'all 0.2s ease',
-        cursor: clip.link ? 'pointer' : 'default'
+        cursor: hasLink ? 'pointer' : 'default',
+        border: isHovered && hasLink ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid transparent'
       }}
-      onClick={() => clip.link && window.open(clip.link, '_blank')}
+      onClick={() => hasLink && window.open(clip.link, '_blank')}
     >
       <div style={{
         width: '44px',
@@ -429,26 +458,68 @@ const ClipCard = ({ clip }) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: '20px'
+        fontSize: '20px',
+        position: 'relative'
       }}>
         {clip.platform === 'Tik Tok' ? '🎵' : clip.platform === 'Instagram' ? '📸' : '▶️'}
+        {hasLink && (
+          <div style={{
+            position: 'absolute',
+            bottom: '-4px',
+            right: '-4px',
+            width: '16px',
+            height: '16px',
+            borderRadius: '50%',
+            background: '#22c55e',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '10px'
+          }}>
+            🔗
+          </div>
+        )}
       </div>
-      <div style={{ flex: 1 }}>
-        <p style={{ fontSize: '14px', fontWeight: '600', margin: 0, color: '#fff' }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ 
+          fontSize: '14px', 
+          fontWeight: '600', 
+          margin: 0, 
+          color: '#fff',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        }}>
           {clip.influencerName}
         </p>
-        <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '2px 0 0' }}>
-          {clip.clientName}
+        <p style={{ 
+          fontSize: '12px', 
+          color: 'rgba(255,255,255,0.5)', 
+          margin: '2px 0 0',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        }}>
+          {clip.clientName || 'N/A'}
         </p>
       </div>
-      <div style={{ textAlign: 'right' }}>
+      <div style={{ textAlign: 'right', flexShrink: 0 }}>
         <p style={{ fontSize: '14px', fontWeight: '700', margin: 0, color: '#fff' }}>
           {formatNumber(clip.views)}
         </p>
         <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: '2px 0 0' }}>
-          {getDaysAgo(clip.publishDate)}
+          {getDaysAgo(clip.publishDate) || formatDate(clip.publishDate)}
         </p>
       </div>
+      {hasLink && isHovered && (
+        <div style={{
+          fontSize: '16px',
+          color: '#a78bfa',
+          marginLeft: '8px'
+        }}>
+          →
+        </div>
+      )}
     </div>
   );
 };
