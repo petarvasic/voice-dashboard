@@ -208,7 +208,218 @@ const GlassCard = ({ children, gradient = false, hover = true, onClick, style = 
   );
 };
 
-// Stat Card with animated counter
+// Flip Card for Stats with clickable back showing clips
+const FlipStatCard = ({ icon, label, value, subValue, gradient = 'purple', clips = [], size = 'normal' }) => {
+  const [isFlipped, setIsFlipped] = useState(false);
+  const isLarge = size === 'large';
+  
+  const gradients = {
+    purple: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(99, 102, 241, 0.1))',
+    green: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(16, 185, 129, 0.1))',
+    blue: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(99, 102, 241, 0.1))',
+    orange: 'linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(234, 179, 8, 0.1))',
+    red: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(236, 72, 153, 0.1))',
+    pink: 'linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(139, 92, 246, 0.1))'
+  };
+
+  const hasClips = clips && clips.length > 0;
+
+  return (
+    <div 
+      style={{ 
+        perspective: '1000px',
+        height: isLarge ? '160px' : '140px'
+      }}
+    >
+      <div
+        onClick={() => hasClips && setIsFlipped(!isFlipped)}
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          transformStyle: 'preserve-3d',
+          transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+          cursor: hasClips ? 'pointer' : 'default'
+        }}
+      >
+        {/* Front - Stats */}
+        <div
+          className="glass"
+          style={{
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
+            borderRadius: '20px',
+            padding: '20px',
+            background: gradients[gradient],
+            border: '1px solid rgba(255,255,255,0.08)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: isLarge ? '24px' : '20px' }}>{icon}</span>
+              <span style={{ 
+                fontSize: '10px', 
+                color: 'rgba(255,255,255,0.5)', 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.5px',
+                fontWeight: '600'
+              }}>{label}</span>
+            </div>
+            {hasClips && (
+              <span style={{ 
+                fontSize: '16px', 
+                color: 'rgba(255,255,255,0.3)',
+                transition: 'transform 0.3s ease'
+              }}>
+                ↻
+              </span>
+            )}
+          </div>
+          <div>
+            <p style={{ 
+              fontSize: isLarge ? '42px' : '32px', 
+              fontWeight: '800', 
+              margin: 0, 
+              color: '#fff',
+              lineHeight: 1
+            }}>{value}</p>
+            {subValue && (
+              <p style={{ 
+                fontSize: '12px', 
+                color: 'rgba(255,255,255,0.5)', 
+                margin: '6px 0 0', 
+                fontWeight: '500' 
+              }}>{subValue}</p>
+            )}
+          </div>
+          {hasClips && (
+            <p style={{ 
+              fontSize: '10px', 
+              color: 'rgba(255,255,255,0.3)', 
+              margin: 0,
+              textAlign: 'center'
+            }}>
+              Klikni za detalje
+            </p>
+          )}
+        </div>
+        
+        {/* Back - Clips List */}
+        <div
+          className="glass"
+          style={{
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
+            transform: 'rotateY(180deg)',
+            borderRadius: '20px',
+            padding: '16px',
+            background: 'rgba(15, 15, 30, 0.95)',
+            border: '1px solid rgba(139, 92, 246, 0.3)',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column'
+          }}
+        >
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            marginBottom: '10px',
+            flexShrink: 0
+          }}>
+            <span style={{ fontSize: '12px', fontWeight: '600', color: '#fff' }}>
+              {icon} {label}
+            </span>
+            <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.3)' }}>✕</span>
+          </div>
+          <div style={{ 
+            flex: 1, 
+            overflow: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px'
+          }}>
+            {clips.slice(0, 5).map((clip, i) => (
+              <a
+                key={clip.id || i}
+                href={clip.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 10px',
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: '8px',
+                  textDecoration: 'none',
+                  transition: 'background 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(139, 92, 246, 0.2)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+              >
+                <div style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '6px',
+                  background: clip.platform === 'Tik Tok' 
+                    ? 'linear-gradient(135deg, #010101, #69C9D0)'
+                    : 'linear-gradient(45deg, #f09433, #dc2743, #bc1888)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <PlatformIcon platform={clip.platform} size={14} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ 
+                    fontSize: '11px', 
+                    fontWeight: '600', 
+                    margin: 0, 
+                    color: '#fff',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {clip.influencerName}
+                  </p>
+                  <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>
+                    {formatNumber(clip.views)} views
+                  </p>
+                </div>
+                <span style={{ fontSize: '12px', color: '#a78bfa' }}>↗</span>
+              </a>
+            ))}
+            {clips.length > 5 && (
+              <p style={{ 
+                fontSize: '10px', 
+                color: 'rgba(255,255,255,0.4)', 
+                textAlign: 'center',
+                margin: '4px 0 0'
+              }}>
+                +{clips.length - 5} više
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Stat Card with animated counter (non-flipping version)
 const StatCard = ({ icon, label, value, subValue, gradient = 'purple', size = 'normal', onClick }) => {
   const [displayValue, setDisplayValue] = useState(0);
   const isLarge = size === 'large';
@@ -1547,12 +1758,13 @@ export default function CoordinatorDashboard() {
               value={data.summary?.declinedToday || 0}
               gradient="red"
             />
-            <StatCard 
+            <FlipStatCard 
               icon="🎬" 
               label="Objavljeno danas" 
               value={data.summary?.publishedToday || 0}
               subValue={data.summary?.viewsToday ? `${formatNumber(data.summary.viewsToday)} views` : null}
               gradient="pink"
+              clips={data.clips?.publishedToday || []}
             />
           </div>
 
