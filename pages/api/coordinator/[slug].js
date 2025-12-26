@@ -175,13 +175,7 @@ export default async function handler(req, res) {
     console.error('API Error:', error);
     res.status(500).json({ 
       error: 'Server error', 
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      message: error.message
     });
   }
 }
-```
-
-Ovo je stabilnija verzija sa boljim error handling-om. Zameni na GitHub-u, sačekaj deploy, pa testiraj ponovo API:
-```
-https://voice-client-dashboard.vercel.app/api/coordinator/teodora
