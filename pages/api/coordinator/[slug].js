@@ -58,26 +58,97 @@ export default async function handler(req, res) {
       console.log('Contract months error:', e.message);
     }
 
-    const months = contractMonths.map(record => ({
-      id: record.id,
-      month: record.fields['Month'] || '',
-      clientId: record.fields['Client']?.[0] || null,
-      clientName: record.fields['Client Name'] || '',
-      campaignGoal: parseInt(record.fields['Campaign Goal (Views)']) || 0,
-      totalViews: parseInt(record.fields['Total Views for a Contract Month']) || 0,
-      percentDelivered: parseFloat(record.fields['%Delivered']) || 0,
-      progressStatus: record.fields['Progress Status'] || '',
-      startDate: record.fields['Start Date'] || '',
-      endDate: record.fields['End Date'] || '',
-      daysLeft: parseInt(record.fields['Days Left']) || 0,
-      publishedClips: parseInt(record.fields['Number of Published Clips']) || 0,
-      contractStatus: record.fields['Contract Status'] || 'Active'
-    }));
+    // 3. Get ALL clips to map to campaigns and show recent
+    let allClips = [];
+    try {
+      allClips = await base('Clips')
+        .select({
+          sort: [{ field: 'Publish Date', direction: 'desc' }],
+          maxRecords: 1000
+        })
+        .all();
+    } catch (e) {
+      console.log('Clips error:', e.message);
+    }
+
+    // Create a map of clips by contract month ID
+    const clipsByMonth = {};
+    allClips.forEach(clip => {
+      const monthIds = clip.fields['Contract Months'] || [];
+      monthIds.forEach(monthId => {
+        if (!clipsByMonth[monthId]) {
+          clipsByMonth[monthId] = [];
+        }
+        clipsByMonth[monthId].push({
+          id: clip.id,
+          influencerId: clip.fields['Influencer']?.[0] || null,
+          influencerName: clip.fields['Influencer Name']?.[0] || 'Unknown',
+          status: clip.fields['Status'] || '',
+          clipStatus: clip.fields['Clip Status'] || '',
+          publishDate: clip.fields['Publish Date'] || null,
+          views: parseInt(clip.fields['Total Views']) || 0,
+          likes: parseInt(clip.fields['Likes']) || 0,
+          link: clip.fields['Social Media link'] || '',
+          platform: clip.fields['Social'] || ''
+        });
+      });
+    });
+
+    // Process months with influencer aggregation
+    const months = contractMonths.map(record => {
+      const monthId = record.id;
+      const monthClips = clipsByMonth[monthId] || [];
+      
+      // Aggregate influencers from clips
+      const influencerMap = {};
+      monthClips.forEach(clip => {
+        if (clip.influencerId) {
+          if (!influencerMap[clip.influencerId]) {
+            influencerMap[clip.influencerId] = {
+              id: clip.influencerId,
+              name: clip.influencerName,
+              clips: 0,
+              views: 0,
+              lastClipDate: null
+            };
+          }
+          influencerMap[clip.influencerId].clips += 1;
+          influencerMap[clip.influencerId].views += clip.views;
+          
+          // Track most recent clip date
+          if (clip.publishDate) {
+            if (!influencerMap[clip.influencerId].lastClipDate || 
+                clip.publishDate > influencerMap[clip.influencerId].lastClipDate) {
+              influencerMap[clip.influencerId].lastClipDate = clip.publishDate;
+            }
+          }
+        }
+      });
+
+      const influencers = Object.values(influencerMap).sort((a, b) => b.views - a.views);
+
+      return {
+        id: monthId,
+        month: record.fields['Month'] || '',
+        clientId: record.fields['Client']?.[0] || null,
+        clientName: record.fields['Client Name'] || '',
+        campaignGoal: parseInt(record.fields['Campaign Goal (Views)']) || 0,
+        totalViews: parseInt(record.fields['Total Views for a Contract Month']) || 0,
+        percentDelivered: parseFloat(record.fields['%Delivered']) || 0,
+        progressStatus: record.fields['Progress Status'] || '',
+        startDate: record.fields['Start Date'] || '',
+        endDate: record.fields['End Date'] || '',
+        daysLeft: parseInt(record.fields['Days Left']) || 0,
+        publishedClips: parseInt(record.fields['Number of Published Clips']) || 0,
+        contractStatus: record.fields['Contract Status'] || 'Active',
+        influencers: influencers
+      };
+    });
 
     // Filter - exclude Closed
     const activeMonths = months.filter(m => m.contractStatus !== 'Closed');
 
-    // 3. Get offers (with error handling)
+    // 4. Get offers
     let offers = [];
     try {
       const offerRecords = await base('Offers')
@@ -101,32 +172,21 @@ export default async function handler(req, res) {
       console.log('Offers error:', e.message);
     }
 
-    // 4. Get recent clips (with error handling)
-    let clips = [];
-    try {
-      const clipRecords = await base('Clips')
-        .select({
-          sort: [{ field: 'Publish Date', direction: 'desc' }],
-          maxRecords: 100
-        })
-        .firstPage();
+    // 5. Process clips for display
+    const allClipsMapped = allClips.map(clip => ({
+      id: clip.id,
+      influencerName: clip.fields['Influencer Name']?.[0] || 'Unknown',
+      clientName: clip.fields['Client Name']?.[0] || '',
+      status: clip.fields['Status'] || '',
+      clipStatus: clip.fields['Clip Status'] || '',
+      publishDate: clip.fields['Publish Date'] || null,
+      views: parseInt(clip.fields['Total Views']) || 0,
+      likes: parseInt(clip.fields['Likes']) || 0,
+      link: clip.fields['Social Media link'] || '',
+      platform: clip.fields['Social'] || ''
+    }));
 
-      clips = clipRecords.map(record => ({
-        id: record.id,
-        influencerName: record.fields['Influencer Name']?.[0] || 'Unknown',
-        clientName: record.fields['Client Name']?.[0] || '',
-        status: record.fields['Status'] || '',
-        clipStatus: record.fields['Clip Status'] || '',
-        publishDate: record.fields['Publish Date'] || null,
-        views: parseInt(record.fields['Total Views']) || 0,
-        link: record.fields['Social Media link'] || '',
-        platform: record.fields['Social'] || ''
-      }));
-    } catch (e) {
-      console.log('Clips error:', e.message);
-    }
-
-    // 5. Categorize data
+    // 6. Categorize data
     const today = new Date().toISOString().split('T')[0];
 
     const pendingOffers = offers.filter(o => o.status === 'Sent' && o.type === 'Offer');
@@ -134,9 +194,9 @@ export default async function handler(req, res) {
     const acceptedToday = offers.filter(o => o.status === 'Accepted' && o.responseDate === today);
     const declinedToday = offers.filter(o => o.status === 'Declined' && o.responseDate === today);
 
-    const waitingContent = clips.filter(c => c.clipStatus === 'In Progress');
-    const publishedRecent = clips.filter(c => c.status === 'Published').slice(0, 20);
-    const publishedToday = clips.filter(c => c.publishDate === today);
+    const waitingContent = allClipsMapped.filter(c => c.clipStatus === 'In Progress');
+    const publishedRecent = allClipsMapped.filter(c => c.status === 'Published').slice(0, 20);
+    const publishedToday = allClipsMapped.filter(c => c.publishDate === today);
 
     // Return response
     res.status(200).json({
@@ -164,7 +224,7 @@ export default async function handler(req, res) {
         declinedToday
       },
       clips: {
-        waitingContent,
+        waitingContent: waitingContent.slice(0, 10),
         needsReview: [],
         publishedRecent
       },
