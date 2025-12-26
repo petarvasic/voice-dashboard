@@ -702,6 +702,32 @@ const InfluencerRow = ({ influencer, onClick }) => {
   );
 };
 
+// Platform Icon Component
+const PlatformIcon = ({ platform, size = 24 }) => {
+  if (platform === 'Tik Tok') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z" fill="#fff"/>
+      </svg>
+    );
+  }
+  if (platform === 'Instagram') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" fill="#fff"/>
+      </svg>
+    );
+  }
+  if (platform === 'Youtube') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" fill="#fff"/>
+      </svg>
+    );
+  }
+  return <span style={{ fontSize: size * 0.8 }}>🎬</span>;
+};
+
 // Clip Card
 const ClipCard = ({ clip, onClick }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -710,13 +736,13 @@ const ClipCard = ({ clip, onClick }) => {
   const getPlatformStyle = () => {
     switch(clip.platform) {
       case 'Tik Tok':
-        return { bg: 'linear-gradient(135deg, #000, #25f4ee)', icon: '🎵' };
+        return { bg: 'linear-gradient(135deg, #010101, #69C9D0)', color: '#25f4ee' };
       case 'Instagram':
-        return { bg: 'linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)', icon: '📸' };
+        return { bg: 'linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)', color: '#E1306C' };
       case 'Youtube':
-        return { bg: 'linear-gradient(135deg, #ff0000, #cc0000)', icon: '▶️' };
+        return { bg: 'linear-gradient(135deg, #FF0000, #cc0000)', color: '#FF0000' };
       default:
-        return { bg: 'linear-gradient(135deg, #6366f1, #8b5cf6)', icon: '🎬' };
+        return { bg: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#8b5cf6' };
     }
   };
   
@@ -749,11 +775,10 @@ const ClipCard = ({ clip, onClick }) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: '22px',
         position: 'relative',
         flexShrink: 0
       }}>
-        {platformStyle.icon}
+        <PlatformIcon platform={clip.platform} size={24} />
         {hasLink && (
           <div style={{
             position: 'absolute',
@@ -982,7 +1007,7 @@ const InfluencerDrawer = ({ influencer, campaign, clips, onClose }) => {
   );
 };
 
-// Clip Modal with video embed
+// Clip Modal with video embed - LARGER SIZE + Instagram support
 const ClipModal = ({ clip, onClose }) => {
   if (!clip) return null;
   
@@ -995,7 +1020,21 @@ const ClipModal = ({ clip, onClose }) => {
     return null;
   };
   
-  const embedUrl = clip.platform === 'Tik Tok' ? getTikTokEmbed(clip.link) : null;
+  const getInstagramEmbed = (url) => {
+    // Extract post ID from Instagram URL
+    // Formats: /p/CODE/, /reel/CODE/, /reels/CODE/
+    const match = url?.match(/\/(p|reel|reels)\/([A-Za-z0-9_-]+)/);
+    if (match) {
+      return `https://www.instagram.com/p/${match[2]}/embed`;
+    }
+    return null;
+  };
+  
+  const embedUrl = clip.platform === 'Tik Tok' 
+    ? getTikTokEmbed(clip.link) 
+    : clip.platform === 'Instagram'
+      ? getInstagramEmbed(clip.link)
+      : null;
   
   return (
     <>
@@ -1005,47 +1044,67 @@ const ClipModal = ({ clip, onClose }) => {
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0,0,0,0.8)',
-          backdropFilter: 'blur(8px)',
+          background: 'rgba(0,0,0,0.85)',
+          backdropFilter: 'blur(10px)',
           zIndex: 200,
           animation: 'fadeIn 0.2s ease'
         }}
       />
       
-      {/* Modal */}
+      {/* Modal - LARGER */}
       <div
         style={{
           position: 'fixed',
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: '500px',
+          width: '450px',
           maxWidth: '95vw',
-          maxHeight: '90vh',
+          maxHeight: '95vh',
           zIndex: 201,
           animation: 'scaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           borderRadius: '24px',
           overflow: 'hidden',
           background: 'linear-gradient(135deg, #1a1a2e, #16213e)',
           border: '1px solid rgba(139, 92, 246, 0.3)',
-          boxShadow: '0 25px 80px rgba(0,0,0,0.6)'
+          boxShadow: '0 25px 80px rgba(0,0,0,0.6)',
+          display: 'flex',
+          flexDirection: 'column'
         }}
       >
         {/* Header */}
         <div style={{
-          padding: '20px 24px',
+          padding: '16px 20px',
           borderBottom: '1px solid rgba(255,255,255,0.1)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          flexShrink: 0
         }}>
-          <div>
-            <h3 style={{ fontSize: '18px', fontWeight: '700', margin: 0, color: '#fff' }}>
-              {clip.influencerName || 'Clip'}
-            </h3>
-            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: '4px 0 0' }}>
-              {clip.clientName} • {clip.platform}
-            </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '10px',
+              background: clip.platform === 'Tik Tok' 
+                ? 'linear-gradient(135deg, #010101, #69C9D0)'
+                : clip.platform === 'Instagram'
+                  ? 'linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)'
+                  : 'linear-gradient(135deg, #FF0000, #cc0000)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <PlatformIcon platform={clip.platform} size={20} />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '16px', fontWeight: '700', margin: 0, color: '#fff' }}>
+                {clip.influencerName || 'Clip'}
+              </h3>
+              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '2px 0 0' }}>
+                {clip.clientName}
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -1057,55 +1116,75 @@ const ClipModal = ({ clip, onClose }) => {
               border: 'none',
               color: '#fff',
               fontSize: '18px',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s ease'
             }}
+            onMouseEnter={(e) => e.target.style.background = 'rgba(239, 68, 68, 0.3)'}
+            onMouseLeave={(e) => e.target.style.background = 'rgba(255,255,255,0.1)'}
           >
             ✕
           </button>
         </div>
         
-        {/* Stats */}
+        {/* Stats - Compact */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 1fr)',
           gap: '1px',
-          background: 'rgba(255,255,255,0.1)'
+          background: 'rgba(255,255,255,0.1)',
+          flexShrink: 0
         }}>
-          <div style={{ padding: '16px', textAlign: 'center', background: '#1a1a2e' }}>
-            <p style={{ fontSize: '24px', fontWeight: '800', margin: 0, color: '#22c55e' }}>
+          <div style={{ padding: '12px', textAlign: 'center', background: '#1a1a2e' }}>
+            <p style={{ fontSize: '20px', fontWeight: '800', margin: 0, color: '#22c55e' }}>
               {formatNumber(clip.views || 0)}
             </p>
-            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', margin: '4px 0 0' }}>Views</p>
+            <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', margin: '2px 0 0' }}>Views</p>
           </div>
-          <div style={{ padding: '16px', textAlign: 'center', background: '#1a1a2e' }}>
-            <p style={{ fontSize: '24px', fontWeight: '800', margin: 0, color: '#ec4899' }}>
+          <div style={{ padding: '12px', textAlign: 'center', background: '#1a1a2e' }}>
+            <p style={{ fontSize: '20px', fontWeight: '800', margin: 0, color: '#ec4899' }}>
               {formatNumber(clip.likes || 0)}
             </p>
-            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', margin: '4px 0 0' }}>Likes</p>
+            <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', margin: '2px 0 0' }}>Likes</p>
           </div>
-          <div style={{ padding: '16px', textAlign: 'center', background: '#1a1a2e' }}>
-            <p style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#fff' }}>
-              {formatDate(clip.publishDate)}
+          <div style={{ padding: '12px', textAlign: 'center', background: '#1a1a2e' }}>
+            <p style={{ fontSize: '14px', fontWeight: '600', margin: 0, color: '#fff' }}>
+              {formatShortDate(clip.publishDate)}
             </p>
-            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', margin: '4px 0 0' }}>Objavljeno</p>
+            <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', margin: '2px 0 0' }}>Objavljeno</p>
           </div>
         </div>
         
-        {/* Video Embed or Link */}
-        <div style={{ padding: '24px' }}>
+        {/* Video Embed or Link - TALLER */}
+        <div style={{ 
+          padding: '16px', 
+          flex: 1, 
+          display: 'flex', 
+          flexDirection: 'column',
+          minHeight: 0
+        }}>
           {embedUrl ? (
             <div style={{
               width: '100%',
-              height: '500px',
+              height: clip.platform === 'Instagram' ? '580px' : '680px',
               borderRadius: '16px',
               overflow: 'hidden',
-              background: '#000'
+              background: '#000',
+              flex: 1
             }}>
               <iframe
                 src={embedUrl}
-                style={{ width: '100%', height: '100%', border: 'none' }}
+                style={{ 
+                  width: '100%', 
+                  height: '100%', 
+                  border: 'none',
+                  borderRadius: '16px'
+                }}
                 allowFullScreen
-                allow="autoplay; encrypted-media"
+                allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
+                scrolling="no"
               />
             </div>
           ) : clip.link ? (
@@ -1118,28 +1197,39 @@ const ClipModal = ({ clip, onClose }) => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '12px',
-                padding: '20px',
-                background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+                padding: '24px',
+                background: clip.platform === 'Tik Tok'
+                  ? 'linear-gradient(135deg, #010101, #69C9D0)'
+                  : clip.platform === 'Instagram'
+                    ? 'linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)'
+                    : 'linear-gradient(135deg, #8b5cf6, #6366f1)',
                 borderRadius: '16px',
                 color: '#fff',
                 textDecoration: 'none',
                 fontSize: '16px',
                 fontWeight: '600',
-                transition: 'transform 0.2s ease'
+                transition: 'transform 0.2s ease, box-shadow 0.2s ease'
               }}
-              onMouseEnter={(e) => e.target.style.transform = 'scale(1.02)'}
-              onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+              onMouseEnter={(e) => {
+                e.target.style.transform = 'scale(1.02)';
+                e.target.style.boxShadow = '0 10px 30px rgba(139, 92, 246, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'scale(1)';
+                e.target.style.boxShadow = 'none';
+              }}
             >
-              <span style={{ fontSize: '24px' }}>🔗</span>
-              Otvori {clip.platform} klip
+              <PlatformIcon platform={clip.platform} size={28} />
+              Otvori na {clip.platform}
             </a>
           ) : (
             <div style={{
-              padding: '40px',
+              padding: '60px',
               textAlign: 'center',
               color: 'rgba(255,255,255,0.4)'
             }}>
-              <p>Link nije dostupan</p>
+              <span style={{ fontSize: '48px', display: 'block', marginBottom: '16px' }}>🔗</span>
+              <p style={{ margin: 0 }}>Link nije dostupan</p>
             </div>
           )}
         </div>
