@@ -67,7 +67,7 @@ export default async function handler(req, res) {
     // 3. Get contract months - filter by coordinator unless HOD/Admin
     let monthsFormula = `{Contract Status} = "Active"`;
     if (!isHOD) {
-      monthsFormula = `AND({Contract Status} = "Active", {Coordinator} = "${user.id}")`;
+      monthsFormula = `AND({Contract Status} = "Active", {Coordinator} = "${userFields['Name']}")`;
     }
 
     const contractMonths = await base('Contract Months')
