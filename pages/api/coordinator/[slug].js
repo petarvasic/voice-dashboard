@@ -157,11 +157,13 @@ export default async function handler(req, res) {
               tier: clip.influencerTier,
               clips: 0,
               views: 0,
-              lastClipDate: null
+              lastClipDate: null,
+              clipsList: [] // Add clips array
             };
           }
           influencerAgg[clip.influencerId].clips += 1;
           influencerAgg[clip.influencerId].views += clip.views;
+          influencerAgg[clip.influencerId].clipsList.push(clip); // Store clip data
           
           if (clip.publishDate) {
             if (!influencerAgg[clip.influencerId].lastClipDate || 
