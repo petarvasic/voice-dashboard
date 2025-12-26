@@ -1,5 +1,5 @@
-// pages/influencer/[slug].js - Influencer Dashboard v4
-// PREMIUM WARM GLASSMORPHISM - Pixel-perfect Crextio-inspired design
+// pages/influencer/[slug].js - Influencer Dashboard v5
+// CLEAN MINIMAL - Twisty-inspired design
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -28,8 +28,10 @@ const formatDate = (dateStr) => {
 const getTimeAgo = (dateStr) => {
   if (!dateStr) return '';
   const diff = Date.now() - new Date(dateStr).getTime();
+  const hours = Math.floor(diff / 3600000);
+  if (hours < 1) return 'Upravo';
+  if (hours < 24) return `Pre ${hours}h`;
   const days = Math.floor(diff / 86400000);
-  if (days === 0) return 'Danas';
   if (days === 1) return 'Juče';
   if (days < 7) return `Pre ${days} dana`;
   return formatDate(dateStr);
@@ -38,633 +40,462 @@ const getTimeAgo = (dateStr) => {
 // ============ GLOBAL STYLES ============
 const GlobalStyles = () => (
   <style>{`
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap');
     
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
     body {
-      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
-      background: linear-gradient(160deg, #B8B5C9 0%, #C9C6D6 25%, #DCD9E4 50%, #E8E4D9 75%, #F0EBE0 100%);
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background: #ECEEF2;
       min-height: 100vh;
+      color: #1a1a2e;
     }
     
-    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-    @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.02); opacity: 0.95; } }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes slideIn { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
     @keyframes scaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes progressFill { from { stroke-dashoffset: 283; } }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
     @keyframes barGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
     
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
+    ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
     
-    .glass-card {
-      background: rgba(255, 255, 255, 0.55);
-      backdrop-filter: blur(40px);
-      -webkit-backdrop-filter: blur(40px);
-      border-radius: 28px;
-      border: 1px solid rgba(255, 255, 255, 0.6);
-      box-shadow: 
-        0 2px 8px rgba(0, 0, 0, 0.04),
-        0 8px 24px rgba(0, 0, 0, 0.04),
-        inset 0 1px 1px rgba(255, 255, 255, 0.8);
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    .card {
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+      transition: all 0.3s ease;
     }
     
-    .glass-card:hover {
-      background: rgba(255, 255, 255, 0.65);
-      box-shadow: 
-        0 4px 12px rgba(0, 0, 0, 0.05),
-        0 16px 40px rgba(0, 0, 0, 0.06),
-        inset 0 1px 1px rgba(255, 255, 255, 0.9);
-      transform: translateY(-2px);
+    .card:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.06);
     }
     
-    .glass-card-static {
-      background: rgba(255, 255, 255, 0.55);
-      backdrop-filter: blur(40px);
-      -webkit-backdrop-filter: blur(40px);
-      border-radius: 28px;
-      border: 1px solid rgba(255, 255, 255, 0.6);
-      box-shadow: 
-        0 2px 8px rgba(0, 0, 0, 0.04),
-        0 8px 24px rgba(0, 0, 0, 0.04),
-        inset 0 1px 1px rgba(255, 255, 255, 0.8);
-    }
-    
-    .glass-overlay {
-      background: rgba(255, 255, 255, 0.25);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-    }
-    
-    .dark-card {
-      background: linear-gradient(145deg, #2D2D3A 0%, #252532 100%);
-      border-radius: 28px;
-      color: white;
-      box-shadow: 
-        0 4px 16px rgba(0, 0, 0, 0.15),
-        0 12px 40px rgba(0, 0, 0, 0.12);
-    }
-    
-    .warm-gradient {
-      background: linear-gradient(135deg, #FFFCF5 0%, #FFF5E1 40%, #FFE9C2 100%);
+    .card-static {
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
     }
     
     .tag {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 8px 16px;
-      border-radius: 100px;
-      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 11px;
       font-weight: 600;
-      letter-spacing: 0.2px;
+      letter-spacing: 0.3px;
     }
     
-    .tag-yellow { background: rgba(245, 200, 66, 0.9); color: #5D4E37; }
-    .tag-green { background: rgba(125, 216, 125, 0.9); color: #2E5A2E; }
-    .tag-gray { background: rgba(0,0,0,0.06); color: #666; }
-    .tag-pending { background: rgba(255, 224, 130, 0.9); color: #5D4E37; }
-    .tag-accepted { background: rgba(165, 214, 167, 0.9); color: #2E5A2E; }
-    .tag-declined { background: rgba(255, 171, 145, 0.9); color: #5D3A3A; }
+    .tag-paid { background: #E8F5E9; color: #2E7D32; }
+    .tag-pending { background: #FFF3E0; color: #E65100; }
+    .tag-new { background: #E3F2FD; color: #1565C0; }
+    .tag-outline { background: transparent; border: 1px solid #E0E0E0; color: #666; }
     
     .btn-primary {
-      background: linear-gradient(135deg, #F7CD4A 0%, #F5C842 50%, #E8B93A 100%);
-      color: #3D3520;
+      background: #1a1a2e;
+      color: white;
       border: none;
       padding: 14px 28px;
-      border-radius: 16px;
-      font-weight: 700;
+      border-radius: 14px;
+      font-weight: 600;
       font-size: 14px;
       cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 
-        0 2px 8px rgba(245, 200, 66, 0.3),
-        0 4px 16px rgba(245, 200, 66, 0.2),
-        inset 0 1px 1px rgba(255, 255, 255, 0.4);
+      transition: all 0.2s ease;
     }
     
     .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 
-        0 4px 12px rgba(245, 200, 66, 0.4),
-        0 8px 24px rgba(245, 200, 66, 0.3),
-        inset 0 1px 1px rgba(255, 255, 255, 0.5);
+      background: #2d2d4a;
+      transform: translateY(-1px);
     }
     
     .btn-secondary {
-      background: rgba(255,255,255,0.9);
-      color: #2D2D3A;
-      border: 1px solid rgba(0,0,0,0.06);
-      padding: 12px 24px;
-      border-radius: 14px;
+      background: #F5F5F5;
+      color: #1a1a2e;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 12px;
       font-weight: 600;
       font-size: 13px;
       cursor: pointer;
-      transition: all 0.25s ease;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      transition: all 0.2s ease;
     }
     
     .btn-secondary:hover {
+      background: #EEEEEE;
+    }
+    
+    .btn-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid #E8E8E8;
       background: white;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 16px;
+    }
+    
+    .btn-icon:hover {
+      background: #F5F5F5;
+      border-color: #D0D0D0;
     }
     
     input, textarea, select {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background: rgba(255,255,255,0.8);
-      border: 1px solid rgba(0,0,0,0.06);
-      border-radius: 14px;
+      font-family: 'DM Sans', sans-serif;
+      background: #F8F9FA;
+      border: 1px solid #E8E8E8;
+      border-radius: 12px;
       padding: 14px 18px;
       font-size: 14px;
       outline: none;
-      transition: all 0.25s ease;
-      box-shadow: inset 0 1px 3px rgba(0,0,0,0.02);
+      transition: all 0.2s;
     }
     
     input:focus, textarea:focus {
       background: white;
-      border-color: rgba(245, 200, 66, 0.5);
-      box-shadow: 
-        0 0 0 4px rgba(245, 200, 66, 0.12),
-        inset 0 1px 3px rgba(0,0,0,0.02);
+      border-color: #1a1a2e;
     }
+    
+    .serif { font-family: 'DM Serif Display', serif; }
   `}</style>
 );
 
 // ============ COMPONENTS ============
 
-// Blurred Stat Overlay (on image)
-const BlurredStatOverlay = ({ icon, value, label, position = 'top-left' }) => {
-  const positions = {
-    'top-left': { top: '16px', left: '16px' },
-    'top-right': { top: '16px', right: '16px' },
-    'bottom-left': { bottom: '80px', left: '16px' },
-    'bottom-right': { bottom: '80px', right: '16px' }
-  };
-  
-  return (
-    <div className="glass-overlay" style={{
-      position: 'absolute',
-      ...positions[position],
-      padding: '12px 18px',
-      borderRadius: '16px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '10px',
-      animation: 'fadeIn 0.6s ease'
-    }}>
-      <span style={{ fontSize: '18px' }}>{icon}</span>
-      <div>
-        <p style={{ fontSize: '18px', fontWeight: '800', margin: 0, color: 'white', textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}>
-          {value}
-        </p>
-        <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.8)', margin: 0, fontWeight: '500', letterSpacing: '0.5px' }}>
-          {label}
-        </p>
-      </div>
-    </div>
-  );
-};
-
-// Circular Progress Ring
-const CircularProgress = ({ percent, size = 140, strokeWidth = 12, color = '#F5C842', label, value }) => {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (percent / 100) * circumference;
-  
-  return (
-    <div style={{ position: 'relative', width: size, height: size }}>
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        {/* Background track */}
-        <circle cx={size/2} cy={size/2} r={radius} fill="none" 
-                stroke="rgba(0,0,0,0.04)" strokeWidth={strokeWidth} />
-        {/* Progress arc */}
-        <circle cx={size/2} cy={size/2} r={radius} fill="none"
-                stroke={color} strokeWidth={strokeWidth}
-                strokeDasharray={circumference} strokeDashoffset={offset}
-                strokeLinecap="round"
-                style={{ 
-                  transition: 'stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1)', 
-                  filter: 'drop-shadow(0 2px 4px rgba(245, 200, 66, 0.3))'
-                }} />
-      </svg>
-      <div style={{
-        position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', textAlign: 'center'
-      }}>
-        <span style={{ fontSize: size * 0.22, fontWeight: '800', color: '#2D2D3A', letterSpacing: '-1px' }}>{value}</span>
-        {label && <span style={{ fontSize: size * 0.085, color: '#999', fontWeight: '500', marginTop: '2px' }}>{label}</span>}
-      </div>
-    </div>
-  );
-};
-
-// Notched Progress Bar (like original design)
-const NotchedProgressBar = ({ data, label, highlightColor = '#F5C842' }) => {
+// Income/Stats Chart with dots and bars
+const IncomeChart = ({ data, label = 'Zarada', showPercentChange = true }) => {
   const maxValue = Math.max(...data.map(d => d.value), 1);
   const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+  
+  // Find highest value for tooltip
+  const highestIndex = data.findIndex(d => d.value === maxValue);
   
   return (
-    <div>
-      {/* Notch indicators at top */}
-      <div style={{ 
-        display: 'flex', alignItems: 'center', gap: '6px', 
-        marginBottom: '12px', paddingLeft: '2px'
-      }}>
-        {data.map((item, i) => (
-          <div key={`notch-${i}`} style={{
-            flex: 1, height: '3px', borderRadius: '2px',
-            background: item.highlight ? highlightColor : 'rgba(0,0,0,0.08)',
-            transition: 'all 0.3s ease'
-          }} />
-        ))}
+    <div className="card-static" style={{ padding: '28px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{
+            width: '36px', height: '36px', borderRadius: '10px',
+            background: '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <span style={{ fontSize: '18px' }}>💰</span>
+          </div>
+          <h3 className="serif" style={{ fontSize: '26px', fontWeight: '400', margin: 0 }}>Income Tracker</h3>
+        </div>
+        <button className="btn-secondary" style={{ padding: '8px 16px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          Week <span style={{ fontSize: '10px' }}>▼</span>
+        </button>
       </div>
       
-      {/* Bar chart */}
-      <div style={{ 
-        display: 'flex', alignItems: 'flex-end', gap: '10px', 
-        height: '100px', padding: '0 2px',
-        borderBottom: '1px solid rgba(0,0,0,0.06)'
-      }}>
-        {data.map((item, i) => (
-          <div key={i} style={{ 
-            flex: 1, display: 'flex', flexDirection: 'column', 
-            alignItems: 'center', gap: '0', height: '100%', justifyContent: 'flex-end'
-          }}>
-            {/* Tooltip on hover */}
-            {item.highlight && (
-              <div style={{
-                background: '#2D2D3A', color: 'white',
-                padding: '4px 10px', borderRadius: '8px',
-                fontSize: '11px', fontWeight: '600',
-                marginBottom: '6px', whiteSpace: 'nowrap'
-              }}>
-                {item.label || `${item.value}h`}
+      <p style={{ fontSize: '13px', color: '#888', marginBottom: '32px', maxWidth: '320px', lineHeight: 1.5 }}>
+        Track changes in income over time and access detailed data on each project and payments received
+      </p>
+      
+      {/* Chart */}
+      <div style={{ position: 'relative', height: '180px', marginBottom: '20px' }}>
+        {/* Bars */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '140px', padding: '0 20px' }}>
+          {data.map((item, i) => {
+            const height = Math.max((item.value / maxValue) * 100, 5);
+            const isHighest = i === highestIndex;
+            const isHovered = i === hoveredIndex;
+            
+            return (
+              <div 
+                key={i} 
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', position: 'relative' }}
+                onMouseEnter={() => setHoveredIndex(i)}
+                onMouseLeave={() => setHoveredIndex(null)}
+              >
+                {/* Tooltip */}
+                {(isHighest || isHovered) && (
+                  <div style={{
+                    position: 'absolute', bottom: `${height + 20}%`,
+                    background: '#1a1a2e', color: 'white',
+                    padding: '6px 12px', borderRadius: '8px',
+                    fontSize: '12px', fontWeight: '600',
+                    whiteSpace: 'nowrap', zIndex: 10
+                  }}>
+                    {formatCurrency(item.value)} RSD
+                    <div style={{
+                      position: 'absolute', bottom: '-5px', left: '50%', transform: 'translateX(-50%)',
+                      width: 0, height: 0,
+                      borderLeft: '5px solid transparent',
+                      borderRight: '5px solid transparent',
+                      borderTop: '5px solid #1a1a2e'
+                    }} />
+                  </div>
+                )}
+                
+                {/* Dot on top */}
+                <div style={{
+                  width: '10px', height: '10px', borderRadius: '50%',
+                  background: isHighest ? '#1a1a2e' : '#CBD5E1',
+                  transition: 'all 0.3s',
+                  transform: isHovered ? 'scale(1.3)' : 'scale(1)'
+                }} />
+                
+                {/* Bar */}
+                <div style={{
+                  width: '4px', borderRadius: '4px',
+                  background: isHighest ? '#1a1a2e' : '#E2E8F0',
+                  height: `${height}%`,
+                  minHeight: '8px',
+                  transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                  transformOrigin: 'bottom',
+                  animation: `barGrow 0.6s ease ${i * 0.05}s both`
+                }} />
               </div>
-            )}
-            {/* Bar */}
-            <div style={{
-              width: '100%', maxWidth: '8px', borderRadius: '4px',
-              background: item.highlight 
-                ? `linear-gradient(180deg, ${highlightColor} 0%, #E8B93A 100%)`
-                : 'rgba(0,0,0,0.08)',
-              height: `${Math.max((item.value / maxValue) * 80, 8)}%`,
-              transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-              transformOrigin: 'bottom',
-              animation: `barGrow 0.6s ease ${i * 0.05}s both`,
-              boxShadow: item.highlight ? '0 2px 8px rgba(245, 200, 66, 0.4)' : 'none'
-            }} />
+            );
+          })}
+        </div>
+        
+        {/* Percentage change */}
+        {showPercentChange && (
+          <div style={{ position: 'absolute', bottom: '0', left: '0' }}>
+            <p style={{ fontSize: '42px', fontWeight: '700', margin: '0', color: '#1a1a2e', letterSpacing: '-2px' }}>+20%</p>
+            <p style={{ fontSize: '12px', color: '#888', margin: '4px 0 0' }}>This week's income is<br/>higher than last week's</p>
           </div>
-        ))}
+        )}
       </div>
       
-      {/* Day labels */}
-      <div style={{ display: 'flex', gap: '10px', marginTop: '10px', padding: '0 2px' }}>
-        {days.map((day, i) => (
-          <div key={i} style={{ 
-            flex: 1, textAlign: 'center', 
-            fontSize: '11px', color: data[i]?.highlight ? '#2D2D3A' : '#aaa', 
-            fontWeight: data[i]?.highlight ? '700' : '500'
-          }}>
-            {day}
-          </div>
-        ))}
+      {/* Day circles */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 10px' }}>
+        {days.map((day, i) => {
+          const isActive = i === 2; // Tuesday highlighted
+          return (
+            <div key={i} style={{
+              width: '40px', height: '40px', borderRadius: '50%',
+              background: isActive ? '#1a1a2e' : '#F5F5F5',
+              color: isActive ? 'white' : '#888',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '13px', fontWeight: '600',
+              transition: 'all 0.2s',
+              cursor: 'pointer'
+            }}>
+              {day}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 };
 
-// Stat Mini Card with better styling
-const StatMini = ({ icon, value, label }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-    <div style={{
-      width: '44px', height: '44px', borderRadius: '14px',
-      background: 'rgba(255,255,255,0.6)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: '20px',
-      boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.8), 0 2px 8px rgba(0,0,0,0.04)'
-    }}>{icon}</div>
-    <div>
-      <p style={{ fontSize: '22px', fontWeight: '800', margin: 0, color: '#2D2D3A', letterSpacing: '-0.5px' }}>{value}</p>
-      <p style={{ fontSize: '11px', color: '#888', margin: 0, fontWeight: '500' }}>{label}</p>
+// Barcode Progress (like Proposal Progress)
+const BarcodeProgress = ({ sent, interviews, hires }) => {
+  return (
+    <div className="card-static" style={{ padding: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', margin: 0 }}>Proposal Progress</h3>
+        <button className="btn-secondary" style={{ padding: '6px 12px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          📅 Decembar 2024 <span style={{ fontSize: '8px' }}>▼</span>
+        </button>
+      </div>
+      
+      {/* Stats row */}
+      <div style={{ display: 'flex', gap: '32px', marginBottom: '20px' }}>
+        <div>
+          <p style={{ fontSize: '11px', color: '#888', margin: '0 0 4px', fontWeight: '500' }}>Proposals sent</p>
+          <p style={{ fontSize: '32px', fontWeight: '700', margin: 0, letterSpacing: '-1px' }}>{sent}</p>
+        </div>
+        <div style={{ borderLeft: '1px solid #E8E8E8', paddingLeft: '32px' }}>
+          <p style={{ fontSize: '11px', color: '#888', margin: '0 0 4px', fontWeight: '500' }}>Interviews</p>
+          <p style={{ fontSize: '32px', fontWeight: '700', margin: 0, letterSpacing: '-1px' }}>{interviews}</p>
+        </div>
+        <div style={{ borderLeft: '1px solid #E8E8E8', paddingLeft: '32px' }}>
+          <p style={{ fontSize: '11px', color: '#888', margin: '0 0 4px', fontWeight: '500' }}>Hires</p>
+          <p style={{ fontSize: '32px', fontWeight: '700', margin: 0, letterSpacing: '-1px' }}>{hires}</p>
+        </div>
+      </div>
+      
+      {/* Barcode visualization */}
+      <div style={{ display: 'flex', gap: '2px', height: '40px', alignItems: 'flex-end' }}>
+        {[...Array(40)].map((_, i) => {
+          const isAccent = i < hires;
+          const height = 20 + Math.random() * 20;
+          return (
+            <div key={i} style={{
+              width: '3px', borderRadius: '1px',
+              height: `${height}px`,
+              background: isAccent ? '#E57373' : '#E8E8E8',
+              transition: 'all 0.3s',
+              animation: `barGrow 0.4s ease ${i * 0.01}s both`
+            }} />
+          );
+        })}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
-// Opportunity Card for Dark Section
-const OpportunityMini = ({ opportunity, index, onApply }) => {
+// Project/Opportunity Card
+const ProjectCard = ({ project, isExpanded, onToggle }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const icons = ['💄', '👗', '💪', '🍕', '📱', '✈️'];
   
   return (
-    <div
+    <div 
+      style={{ 
+        padding: '16px', 
+        borderBottom: '1px solid #F0F0F0',
+        cursor: 'pointer',
+        background: isHovered ? '#FAFAFA' : 'transparent',
+        transition: 'background 0.2s'
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={() => onApply(opportunity)}
-      style={{
-        display: 'flex', alignItems: 'center', gap: '14px',
-        padding: '14px 16px', borderRadius: '16px',
-        background: isHovered ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)',
-        cursor: 'pointer', 
-        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-        transform: isHovered ? 'translateX(4px)' : 'none',
-        animation: `slideIn 0.4s ease ${index * 0.08}s both`,
-        border: '1px solid rgba(255,255,255,0.06)'
-      }}
+      onClick={onToggle}
     >
-      <div style={{
-        width: '44px', height: '44px', borderRadius: '14px',
-        background: 'linear-gradient(135deg, rgba(245, 200, 66, 0.25), rgba(245, 200, 66, 0.15))',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: '20px'
-      }}>
-        {icons[index % icons.length]}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ 
-          fontSize: '14px', fontWeight: '600', margin: '0 0 3px', color: 'white',
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-        }}>
-          {opportunity.clientName}
-        </p>
-        <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-          {opportunity.niche} • {formatCurrency(opportunity.payment)} RSD
-        </p>
-      </div>
-      <div style={{
-        width: '32px', height: '32px', borderRadius: '50%',
-        background: isHovered ? 'linear-gradient(135deg, #F7CD4A, #E8B93A)' : 'rgba(255,255,255,0.08)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        transition: 'all 0.25s ease',
-        border: isHovered ? 'none' : '1px solid rgba(255,255,255,0.1)'
-      }}>
-        <span style={{ 
-          color: isHovered ? '#2D2D3A' : 'rgba(255,255,255,0.4)', 
-          fontSize: '14px',
-          transition: 'all 0.25s ease',
-          transform: isHovered ? 'translateX(2px)' : 'none'
-        }}>→</span>
-      </div>
-    </div>
-  );
-};
-
-// Application Row with refined styling
-const ApplicationRow = ({ application, index }) => {
-  const statusConfig = {
-    'Pending': { bg: 'rgba(255, 224, 130, 0.5)', color: '#8B7355', text: 'Čeka se', icon: '⏳' },
-    'Sent': { bg: 'rgba(255, 224, 130, 0.5)', color: '#8B7355', text: 'Čeka se', icon: '⏳' },
-    'Accepted': { bg: 'rgba(165, 214, 167, 0.5)', color: '#4A7B4A', text: 'Prihvaćeno', icon: '✓' },
-    'Declined': { bg: 'rgba(255, 171, 145, 0.5)', color: '#8B5A5A', text: 'Odbijeno', icon: '✕' }
-  };
-  const status = statusConfig[application.status] || statusConfig['Pending'];
-  
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: '14px',
-      padding: '14px 0', 
-      borderBottom: '1px solid rgba(0,0,0,0.04)',
-      animation: `fadeIn 0.4s ease ${index * 0.08}s both`
-    }}>
-      <div style={{
-        width: '44px', height: '44px', borderRadius: '14px',
-        background: 'linear-gradient(145deg, #FFF5E1, #FFE9C2)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: '16px', fontWeight: '700', color: '#8B7355',
-        boxShadow: 'inset 0 -2px 4px rgba(0,0,0,0.04)'
-      }}>
-        {application.clientName?.charAt(0)}
-      </div>
-      <div style={{ flex: 1 }}>
-        <p style={{ fontSize: '14px', fontWeight: '600', margin: '0 0 2px', color: '#2D2D3A' }}>
-          {application.clientName}
-        </p>
-        <p style={{ fontSize: '11px', color: '#999', margin: 0 }}>{getTimeAgo(application.dateApplied)}</p>
-      </div>
-      <span style={{
-        padding: '6px 14px', borderRadius: '100px', fontSize: '12px', fontWeight: '600',
-        background: status.bg, color: status.color,
-        display: 'flex', alignItems: 'center', gap: '6px'
-      }}>
-        <span style={{ fontSize: '10px' }}>{status.icon}</span>
-        {status.text}
-      </span>
-    </div>
-  );
-};
-
-// Clip Card with refined styling
-const ClipCard = ({ clip, index }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  
-  return (
-    <a href={clip.link} target="_blank" rel="noopener noreferrer"
-       onMouseEnter={() => setIsHovered(true)}
-       onMouseLeave={() => setIsHovered(false)}
-       style={{
-         display: 'block', textDecoration: 'none',
-         animation: `scaleIn 0.4s ease ${index * 0.08}s both`
-       }}>
-      <div className="glass-card" style={{
-        overflow: 'hidden', padding: 0,
-        transform: isHovered ? 'translateY(-6px) scale(1.02)' : 'none'
-      }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
         <div style={{
-          height: '110px',
-          background: clip.platform === 'Tik Tok' 
-            ? 'linear-gradient(145deg, #25F4EE, #FE2C55)' 
-            : 'linear-gradient(145deg, #833AB4, #FD1D1D, #F77737)',
+          width: '44px', height: '44px', borderRadius: '12px',
+          background: project.color || 'linear-gradient(135deg, #FF6B6B, #FF8E53)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          position: 'relative'
+          fontSize: '20px', color: 'white'
         }}>
-          <span style={{ 
-            fontSize: '40px', 
-            filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))',
-            transform: isHovered ? 'scale(1.1)' : 'scale(1)',
-            transition: 'transform 0.3s ease'
-          }}>
-            {clip.platform === 'Tik Tok' ? '🎵' : '📸'}
-          </span>
-          {/* Platform badge */}
-          <div style={{
-            position: 'absolute', top: '10px', right: '10px',
-            background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)',
-            padding: '4px 10px', borderRadius: '8px',
-            fontSize: '10px', color: 'white', fontWeight: '600', letterSpacing: '0.5px'
-          }}>
-            {clip.platform === 'Tik Tok' ? 'TIKTOK' : 'INSTA'}
-          </div>
+          {project.icon || '💼'}
         </div>
-        <div style={{ padding: '16px' }}>
-          <p style={{ 
-            fontSize: '13px', fontWeight: '600', margin: '0 0 8px', color: '#2D2D3A', 
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-          }}>
-            {clip.clientName}
-          </p>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ 
-              fontSize: '20px', fontWeight: '800', 
-              background: 'linear-gradient(135deg, #F5C842, #E8B93A)',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
-            }}>{formatNumber(clip.views)}</span>
-            <span style={{ fontSize: '11px', color: '#aaa', fontWeight: '500' }}>{getTimeAgo(clip.publishDate)}</span>
+        
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '2px' }}>
+            <h4 style={{ fontSize: '14px', fontWeight: '600', margin: 0 }}>{project.name}</h4>
+            <span className={`tag ${project.paid ? 'tag-paid' : 'tag-pending'}`}>
+              {project.paid ? 'Paid' : 'Not Paid'}
+            </span>
           </div>
+          <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>{formatCurrency(project.amount)} RSD</p>
         </div>
+        
+        <button className="btn-icon" style={{ width: '32px', height: '32px', fontSize: '12px', border: 'none', background: '#F5F5F5' }}>
+          {isExpanded ? '∧' : '∨'}
+        </button>
       </div>
-    </a>
-  );
-};
-
-// Profile Field with refined styling
-const ProfileField = ({ icon, label, value, isEditing, onChange, type = 'text', options }) => (
-  <div style={{ 
-    display: 'flex', alignItems: 'center', gap: '14px',
-    padding: '18px', background: 'rgba(255,255,255,0.5)', borderRadius: '18px',
-    border: '1px solid rgba(255,255,255,0.6)'
-  }}>
-    <span style={{ fontSize: '22px' }}>{icon}</span>
-    <div style={{ flex: 1 }}>
-      <label style={{ 
-        fontSize: '10px', color: '#999', fontWeight: '600', 
-        display: 'block', marginBottom: '4px', letterSpacing: '0.5px', textTransform: 'uppercase'
-      }}>
-        {label}
-      </label>
-      {isEditing ? (
-        type === 'select' ? (
-          <select value={value || ''} onChange={onChange} style={{ width: '100%', padding: '8px 12px' }}>
-            <option value="">Izaberi...</option>
-            {options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-          </select>
-        ) : (
-          <input type={type} value={value || ''} onChange={onChange} 
-                 style={{ width: '100%', padding: '8px 12px' }} />
-        )
-      ) : (
-        <p style={{ fontSize: '15px', fontWeight: '600', color: '#2D2D3A', margin: 0 }}>{value || '—'}</p>
+      
+      {isExpanded && (
+        <div style={{ marginTop: '16px', paddingLeft: '58px', animation: 'fadeIn 0.3s ease' }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+            <span className="tag tag-outline">{project.type || 'Remote'}</span>
+            <span className="tag tag-outline">{project.duration || 'Part-time'}</span>
+          </div>
+          <p style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, margin: '0 0 12px' }}>
+            {project.description}
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', color: '#999' }}>
+            <span>📍 {project.location || 'Serbia'}</span>
+            <span>|</span>
+            <span>{getTimeAgo(project.date)}</span>
+          </div>
+        </div>
       )}
     </div>
+  );
+};
+
+// Connection/Application Card
+const ConnectionCard = ({ person, onConnect }) => (
+  <div style={{ 
+    display: 'flex', alignItems: 'center', gap: '14px', 
+    padding: '14px 0', borderBottom: '1px solid #F0F0F0'
+  }}>
+    <img 
+      src={person.photo} 
+      alt={person.name}
+      style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover' }}
+    />
+    <div style={{ flex: 1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <h4 style={{ fontSize: '14px', fontWeight: '600', margin: 0 }}>{person.name}</h4>
+        <span className={`tag ${person.level === 'Senior' ? 'tag-paid' : 'tag-new'}`} style={{ fontSize: '10px', padding: '3px 8px' }}>
+          {person.level}
+        </span>
+      </div>
+      <p style={{ fontSize: '12px', color: '#888', margin: '2px 0 0' }}>{person.role}</p>
+    </div>
+    <button className="btn-icon" onClick={() => onConnect(person)}>+</button>
   </div>
 );
 
-// Navigation Pill with refined styling
-const NavPill = ({ label, isActive, onClick, badge }) => (
+// Premium Unlock Card (with halftone pattern)
+const PremiumCard = () => (
+  <div className="card-static" style={{ 
+    padding: '28px', 
+    background: 'linear-gradient(135deg, #F8F9FA 0%, #ECEEF2 100%)',
+    position: 'relative',
+    overflow: 'hidden'
+  }}>
+    {/* Halftone dots pattern */}
+    <div style={{
+      position: 'absolute', bottom: 0, right: 0,
+      width: '150px', height: '100px',
+      backgroundImage: 'radial-gradient(#CBD5E1 1.5px, transparent 1.5px)',
+      backgroundSize: '8px 8px',
+      opacity: 0.6
+    }} />
+    
+    <h3 style={{ fontSize: '18px', fontWeight: '700', margin: '0 0 8px', position: 'relative' }}>
+      Unlock Premium Features
+    </h3>
+    <p style={{ fontSize: '13px', color: '#666', margin: '0 0 24px', lineHeight: 1.5, maxWidth: '200px', position: 'relative' }}>
+      Get access to exclusive benefits and expand your freelancing opportunities
+    </p>
+    <button style={{
+      background: 'white', border: '1px solid #E0E0E0',
+      padding: '12px 20px', borderRadius: '12px',
+      fontSize: '13px', fontWeight: '600', cursor: 'pointer',
+      display: 'flex', alignItems: 'center', gap: '8px',
+      transition: 'all 0.2s', position: 'relative'
+    }}>
+      Upgrade now <span>→</span>
+    </button>
+  </div>
+);
+
+// Navigation
+const NavLink = ({ label, isActive, onClick }) => (
   <button onClick={onClick} style={{
-    padding: '10px 20px', borderRadius: '100px', border: 'none',
-    background: isActive ? '#2D2D3A' : 'transparent',
-    color: isActive ? 'white' : '#777',
-    fontSize: '13px', fontWeight: '600', cursor: 'pointer',
-    transition: 'all 0.25s ease', position: 'relative',
-    boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.15)' : 'none'
+    background: 'none', border: 'none',
+    fontSize: '14px', fontWeight: isActive ? '600' : '500',
+    color: isActive ? '#1a1a2e' : '#888',
+    cursor: 'pointer', padding: '8px 0',
+    position: 'relative',
+    transition: 'color 0.2s'
   }}>
     {label}
-    {badge > 0 && (
-      <span style={{
-        position: 'absolute', top: '-6px', right: '-6px',
-        minWidth: '20px', height: '20px', borderRadius: '10px',
-        background: 'linear-gradient(135deg, #F7CD4A, #E8B93A)', color: '#3D3520',
-        fontSize: '11px', fontWeight: '700', padding: '0 6px',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: '0 2px 8px rgba(245, 200, 66, 0.4)'
-      }}>{badge}</span>
+    {isActive && (
+      <div style={{
+        position: 'absolute', bottom: '0', left: '0', right: '0',
+        height: '2px', background: '#1a1a2e', borderRadius: '2px'
+      }} />
     )}
   </button>
 );
 
-// Application Modal with refined styling
-const ApplyModal = ({ opportunity, onClose, onSubmit }) => {
-  const [note, setNote] = useState('');
-  
-  if (!opportunity) return null;
-  
-  return (
-    <>
-      <div onClick={onClose} style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
-        backdropFilter: 'blur(12px)', zIndex: 1000
-      }} />
-      <div style={{
-        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-        width: '480px', maxWidth: '92vw', zIndex: 1001,
-        animation: 'scaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-      }}>
-        <div className="glass-card-static" style={{ padding: '32px', background: 'rgba(255,255,255,0.95)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px' }}>
-            <div>
-              <h2 style={{ fontSize: '26px', fontWeight: '800', margin: '0 0 6px', color: '#2D2D3A', letterSpacing: '-0.5px' }}>
-                {opportunity.clientName}
-              </h2>
-              <p style={{ fontSize: '14px', color: '#888', margin: 0 }}>{opportunity.niche} • {opportunity.platform}</p>
-            </div>
-            <button onClick={onClose} style={{
-              width: '40px', height: '40px', borderRadius: '14px',
-              background: 'rgba(0,0,0,0.04)', border: 'none', cursor: 'pointer',
-              fontSize: '18px', color: '#888', transition: 'all 0.2s'
-            }}>✕</button>
-          </div>
-          
-          <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px',
-            background: 'rgba(0,0,0,0.06)',
-            borderRadius: '20px', overflow: 'hidden', marginBottom: '28px'
-          }}>
-            {[
-              { label: 'HONORAR', value: formatCurrency(opportunity.payment), suffix: ' RSD' },
-              { label: 'VIEWS', value: formatNumber(opportunity.viewsRequired), suffix: '' },
-              { label: 'ROK', value: formatDate(opportunity.deadline), suffix: '' }
-            ].map((item, i) => (
-              <div key={i} style={{ 
-                textAlign: 'center', padding: '20px',
-                background: 'linear-gradient(145deg, #FFFCF5, #FFF5E1)'
-              }}>
-                <p style={{ fontSize: '10px', color: '#8B7355', fontWeight: '600', margin: '0 0 6px', letterSpacing: '1px' }}>
-                  {item.label}
-                </p>
-                <p style={{ fontSize: '22px', fontWeight: '800', color: '#2D2D3A', margin: 0, letterSpacing: '-0.5px' }}>
-                  {item.value}<span style={{ fontSize: '12px', fontWeight: '600' }}>{item.suffix}</span>
-                </p>
-              </div>
-            ))}
-          </div>
-          
-          <p style={{ fontSize: '14px', color: '#666', lineHeight: 1.7, marginBottom: '24px' }}>
-            {opportunity.description}
-          </p>
-          
-          <div style={{ marginBottom: '28px' }}>
-            <label style={{ 
-              fontSize: '12px', fontWeight: '600', color: '#2D2D3A', 
-              display: 'block', marginBottom: '10px'
-            }}>
-              💬 Poruka brendu <span style={{ color: '#aaa', fontWeight: '500' }}>(opciono)</span>
-            </label>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Zašto si ti pravi/a za ovaj posao? Npr: 'Idem na more sledeće nedelje - savršeno za ovaj brend!'"
-              style={{ width: '100%', height: '100px', resize: 'none' }}
-            />
-          </div>
-          
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button className="btn-primary" onClick={() => onSubmit(opportunity, note)} style={{ flex: 1 }}>
-              ✨ Pošalji prijavu
-            </button>
-            <button className="btn-secondary" onClick={onClose}>Otkaži</button>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-};
+// Profile Field
+const ProfileField = ({ icon, label, value, isEditing, onChange }) => (
+  <div style={{ 
+    display: 'flex', alignItems: 'center', gap: '14px',
+    padding: '16px', background: '#F8F9FA', borderRadius: '14px'
+  }}>
+    <span style={{ fontSize: '20px' }}>{icon}</span>
+    <div style={{ flex: 1 }}>
+      <label style={{ fontSize: '10px', color: '#888', fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+        {label}
+      </label>
+      {isEditing ? (
+        <input type="text" value={value || ''} onChange={onChange} style={{ width: '100%', padding: '6px 0', background: 'transparent', border: 'none', borderBottom: '1px solid #1a1a2e' }} />
+      ) : (
+        <p style={{ fontSize: '14px', fontWeight: '600', color: '#1a1a2e', margin: '4px 0 0' }}>{value || '—'}</p>
+      )}
+    </div>
+  </div>
+);
 
 // ============ MAIN COMPONENT ============
 export default function InfluencerDashboard() {
@@ -673,8 +504,8 @@ export default function InfluencerDashboard() {
   
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState('dashboard');
-  const [selectedOpportunity, setSelectedOpportunity] = useState(null);
+  const [activeNav, setActiveNav] = useState('Home');
+  const [expandedProject, setExpandedProject] = useState(0);
   
   useEffect(() => {
     if (!slug) return;
@@ -688,7 +519,6 @@ export default function InfluencerDashboard() {
           city: 'Beograd',
           phone: '+381 64 123 4567',
           shirtSize: 'M',
-          pantsSize: '38',
           shoeSize: '39',
           categories: ['Beauty', 'Fashion', 'Lifestyle']
         },
@@ -696,69 +526,50 @@ export default function InfluencerDashboard() {
           totalEarnings: 125000,
           totalViews: 2450000,
           totalClips: 24,
-          avgViewsPerClip: 102000,
           pendingPayment: 15000,
-          completionRate: 92,
-          thisWeekHours: 6.1
+          proposalsSent: 64,
+          interviews: 12,
+          hires: 10
         },
-        weeklyActivity: [
-          { value: 20, highlight: false },
-          { value: 65, highlight: false, label: '5h 23m' },
-          { value: 40, highlight: false },
-          { value: 85, highlight: true, label: '6h 45m' },
-          { value: 55, highlight: true },
-          { value: 15, highlight: false },
-          { value: 8, highlight: false }
+        weeklyIncome: [
+          { value: 8000 },
+          { value: 12000 },
+          { value: 25000 },
+          { value: 18000 },
+          { value: 15000 },
+          { value: 9000 },
+          { value: 6000 }
         ],
-        opportunities: [
-          { id: 1, clientName: 'Nivea Serbia', niche: 'Beauty', platform: 'TikTok', payment: 8000, viewsRequired: 100000, deadline: '2025-01-15', description: 'Tražimo kreativce za zimsku kampanju hidratacije. Potreban autentičan sadržaj o nezi kože!' },
-          { id: 2, clientName: 'Fashion Nova', niche: 'Fashion', platform: 'Instagram', payment: 12000, viewsRequired: 150000, deadline: '2025-01-20', description: 'Nova kolekcija - OOTD content za promociju!' },
-          { id: 3, clientName: 'Protein World', niche: 'Fitness', platform: 'TikTok', payment: 6000, viewsRequired: 80000, deadline: '2025-01-10', description: 'Fitness influenseri za protein šejk promociju.' },
-          { id: 4, clientName: 'Samsung Serbia', niche: 'Tech', platform: 'TikTok', payment: 15000, viewsRequired: 200000, deadline: '2025-01-25', description: 'Unboxing i review novog Galaxy telefona.' },
-          { id: 5, clientName: 'Booking.com', niche: 'Travel', platform: 'Instagram', payment: 10000, viewsRequired: 120000, deadline: '2025-01-18', description: 'Travel content za zimske destinacije.' }
+        projects: [
+          { id: 1, name: 'Beauty Campaign', icon: '💄', color: 'linear-gradient(135deg, #FF6B6B, #FF8E53)', amount: 12000, paid: true, type: 'Remote', duration: 'Part-time', description: 'This project involves creating authentic beauty content for a major skincare brand.', location: 'Serbia', date: '2024-12-24' },
+          { id: 2, name: 'Fashion Collab', icon: '👗', color: 'linear-gradient(135deg, #667eea, #764ba2)', amount: 8000, paid: false, type: 'On-site', duration: 'One-time', description: 'Fashion photoshoot and social media content creation.', location: 'Beograd', date: '2024-12-22' },
+          { id: 3, name: 'Tech Review', icon: '📱', color: 'linear-gradient(135deg, #11998e, #38ef7d)', amount: 15000, paid: true, type: 'Remote', duration: 'Part-time', description: 'Unboxing and review content for new smartphone launch.', location: 'Serbia', date: '2024-12-20' }
         ],
-        applications: [
-          { id: 1, clientName: 'Samsung Serbia', status: 'Accepted', dateApplied: '2024-12-20' },
-          { id: 2, clientName: 'Adidas', status: 'Pending', dateApplied: '2024-12-24' },
-          { id: 3, clientName: 'L\'Oreal', status: 'Declined', dateApplied: '2024-12-15' }
+        connections: [
+          { id: 1, name: 'Ana Stanković', photo: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100', level: 'Senior', role: 'Beauty specialist' },
+          { id: 2, name: 'Marko Nikolić', photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100', level: 'Middle', role: 'Content Creator' }
         ],
         clips: [
           { id: 1, clientName: 'Samsung Serbia', platform: 'Tik Tok', views: 245000, publishDate: '2024-12-22', link: '#' },
-          { id: 2, clientName: 'Coca-Cola', platform: 'Instagram', views: 180000, publishDate: '2024-12-18', link: '#' },
-          { id: 3, clientName: 'Nike', platform: 'Tik Tok', views: 320000, publishDate: '2024-12-10', link: '#' },
-          { id: 4, clientName: 'Zara', platform: 'Tik Tok', views: 95000, publishDate: '2024-12-05', link: '#' }
-        ],
-        earnings: [
-          { month: 'Jul', amount: 15000 },
-          { month: 'Aug', amount: 22000 },
-          { month: 'Sep', amount: 18000 },
-          { month: 'Okt', amount: 28000 },
-          { month: 'Nov', amount: 35000 },
-          { month: 'Dec', amount: 42000 }
+          { id: 2, clientName: 'Coca-Cola', platform: 'Instagram', views: 180000, publishDate: '2024-12-18', link: '#' }
         ]
       });
       setLoading(false);
-    }, 800);
+    }, 600);
   }, [slug]);
-  
-  const handleApply = (opportunity, note) => {
-    console.log('Applying:', opportunity.clientName, note);
-    alert(`✅ Prijava za ${opportunity.clientName} je poslata!`);
-    setSelectedOpportunity(null);
-  };
   
   if (loading) {
     return (
       <>
         <GlobalStyles />
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="glass-card-static" style={{ padding: '48px', textAlign: 'center' }}>
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#ECEEF2' }}>
+          <div className="card-static" style={{ padding: '40px', textAlign: 'center' }}>
             <div style={{
-              width: '48px', height: '48px', borderRadius: '50%',
-              border: '3px solid rgba(0,0,0,0.06)', borderTopColor: '#F5C842',
-              animation: 'spin 0.8s linear infinite', margin: '0 auto 20px'
+              width: '40px', height: '40px', borderRadius: '50%',
+              border: '3px solid #E8E8E8', borderTopColor: '#1a1a2e',
+              animation: 'spin 0.8s linear infinite', margin: '0 auto 16px'
             }} />
-            <p style={{ color: '#888', fontWeight: '500', fontSize: '14px' }}>Učitavanje...</p>
+            <p style={{ color: '#888', fontSize: '14px' }}>Loading...</p>
           </div>
         </div>
       </>
@@ -773,359 +584,105 @@ export default function InfluencerDashboard() {
       </Head>
       <GlobalStyles />
       
-      <div style={{ minHeight: '100vh', padding: '28px' }}>
-        <div style={{ maxWidth: '1500px', margin: '0 auto' }}>
+      <div style={{ minHeight: '100vh', padding: '24px', background: '#ECEEF2' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
           
           {/* Header */}
-          <header className="glass-card-static" style={{
-            padding: '14px 28px', marginBottom: '28px',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+          <header style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            marginBottom: '24px', padding: '0 8px'
           }}>
-            {/* VOICE Logo */}
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <img 
-                src="/VOICE__3_.png" 
-                alt="VOICE" 
-                style={{ height: '32px', width: 'auto' }}
-                onError={(e) => {
-                  // Fallback to text if image fails
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'flex';
-                }}
-              />
-              {/* Fallback text logo */}
-              <div style={{ 
-                display: 'none', alignItems: 'center', gap: '0',
-                fontFamily: 'Plus Jakarta Sans', fontSize: '24px', 
-                fontWeight: '800', color: '#3D3B73', letterSpacing: '-1px'
-              }}>
-                voice
-              </div>
-            </div>
-            
-            <div style={{ 
-              display: 'flex', background: 'rgba(0,0,0,0.03)', 
-              borderRadius: '100px', padding: '5px',
-              border: '1px solid rgba(0,0,0,0.04)'
-            }}>
-              <NavPill label="Dashboard" isActive={activeSection === 'dashboard'} onClick={() => setActiveSection('dashboard')} />
-              <NavPill label="Prilike" isActive={activeSection === 'opportunities'} onClick={() => setActiveSection('opportunities')} badge={data?.opportunities?.length} />
-              <NavPill label="Prijave" isActive={activeSection === 'applications'} onClick={() => setActiveSection('applications')} />
-              <NavPill label="Klipovi" isActive={activeSection === 'clips'} onClick={() => setActiveSection('clips')} />
-              <NavPill label="Profil" isActive={activeSection === 'profile'} onClick={() => setActiveSection('profile')} />
-            </div>
-            
+            {/* Logo */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <button style={{ 
-                width: '42px', height: '42px', borderRadius: '14px', border: 'none',
-                background: 'rgba(0,0,0,0.03)', cursor: 'pointer', fontSize: '18px',
-                transition: 'all 0.2s'
-              }}>🔔</button>
-              <button style={{ 
-                width: '42px', height: '42px', borderRadius: '14px', border: 'none',
-                background: 'rgba(0,0,0,0.03)', cursor: 'pointer', fontSize: '18px',
-                transition: 'all 0.2s'
-              }}>⚙️</button>
+              <div style={{
+                width: '36px', height: '36px', borderRadius: '10px',
+                background: 'linear-gradient(135deg, #FF6B6B, #FF8E53)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <span style={{ color: 'white', fontSize: '16px' }}>🎬</span>
+              </div>
+              <span style={{ fontSize: '18px', fontWeight: '700', color: '#1a1a2e', letterSpacing: '-0.5px' }}>VOICE</span>
+            </div>
+            
+            {/* Nav */}
+            <nav style={{ display: 'flex', gap: '32px' }}>
+              {['Home', 'Prilike', 'Poruke', 'Wallet', 'Profil'].map(item => (
+                <NavLink key={item} label={item} isActive={activeNav === item} onClick={() => setActiveNav(item)} />
+              ))}
+            </nav>
+            
+            {/* Right side */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '10px',
+                background: 'white', padding: '8px 16px', borderRadius: '12px',
+                border: '1px solid #E8E8E8'
+              }}>
+                <span style={{ color: '#888' }}>🔍</span>
+                <input type="text" placeholder="Enter your search request..." 
+                       style={{ border: 'none', background: 'none', outline: 'none', width: '180px', fontSize: '13px' }} />
+              </div>
+              <button className="btn-icon">⚙️</button>
+              <button className="btn-icon">🔔</button>
+              <img src={data?.influencer?.photo} alt="" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
             </div>
           </header>
           
-          {activeSection === 'dashboard' && (
-            <>
-              {/* Welcome + Quick Stats */}
-              <div className="glass-card-static warm-gradient" style={{ padding: '32px', marginBottom: '28px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <h1 style={{ fontSize: '34px', fontWeight: '300', margin: '0 0 12px', color: '#2D2D3A', letterSpacing: '-0.5px' }}>
-                      Dobrodošla, <strong style={{ fontWeight: '800' }}>{data?.influencer?.name?.split(' ')[0]}</strong>
-                    </h1>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <span className="tag tag-yellow">🔥 {data?.opportunities?.length} novih prilika</span>
-                      <span className="tag tag-gray">📊 {data?.stats?.completionRate}% completion</span>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: '48px' }}>
-                    <StatMini icon="👁️" value={formatNumber(data?.stats?.totalViews)} label="Total Views" />
-                    <StatMini icon="🎬" value={data?.stats?.totalClips} label="Klipova" />
-                    <StatMini icon="💰" value={`${formatNumber(data?.stats?.totalEarnings)}`} label="Zarada (RSD)" />
-                  </div>
-                </div>
-              </div>
+          {/* Main Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '24px' }}>
+            
+            {/* Left Column */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               
-              {/* Main Grid - Bento Layout */}
-              <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr 340px', gap: '28px' }}>
-                
-                {/* Left Column - Profile Card */}
-                <div>
-                  <div className="glass-card" style={{ padding: '0', overflow: 'hidden', marginBottom: '28px' }}>
-                    {/* Profile Image with blur overlays */}
-                    <div style={{ position: 'relative', height: '380px' }}>
-                      <img 
-                        src={data?.influencer?.photo}
-                        alt={data?.influencer?.name}
-                        style={{
-                          width: '100%', height: '100%', objectFit: 'cover'
-                        }}
-                      />
-                      
-                      {/* Blurred stat overlays on image - top corners */}
-                      <BlurredStatOverlay icon="🎬" value={data?.stats?.totalClips} label="klipova" position="top-left" />
-                      <BlurredStatOverlay icon="👁️" value={formatNumber(data?.stats?.totalViews)} label="views" position="top-right" />
-                      
-                      {/* Glass bottom panel - like original */}
-                      <div style={{
-                        position: 'absolute', bottom: 0, left: 0, right: 0,
-                        background: 'rgba(255, 255, 255, 0.2)',
-                        backdropFilter: 'blur(20px)',
-                        WebkitBackdropFilter: 'blur(20px)',
-                        borderTop: '1px solid rgba(255, 255, 255, 0.3)',
-                        padding: '24px', color: 'white'
-                      }}>
-                        <h2 style={{ 
-                          fontSize: '28px', fontWeight: '700', margin: '0 0 4px', 
-                          color: 'white',
-                          textShadow: '0 2px 8px rgba(0,0,0,0.3)'
-                        }}>
-                          {data?.influencer?.name}
-                        </h2>
-                        <p style={{ 
-                          fontSize: '14px', 
-                          color: 'rgba(255,255,255,0.8)', 
-                          margin: 0 
-                        }}>
-                          {data?.influencer?.tiktokHandle}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* Categories - clean bottom section */}
-                    <div style={{ padding: '20px 24px', background: 'rgba(255,255,255,0.5)' }}>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                        {data?.influencer?.categories?.map(cat => (
-                          <span key={cat} style={{
-                            padding: '10px 18px', borderRadius: '100px',
-                            background: 'rgba(255,255,255,0.8)', 
-                            fontSize: '13px',
-                            fontWeight: '600', color: '#555',
-                            border: '1px solid rgba(0,0,0,0.06)'
-                          }}>{cat}</span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Moje prijave */}
-                  <div className="glass-card" style={{ padding: '24px' }}>
-                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 20px', color: '#2D2D3A' }}>
-                      📋 Moje prijave
-                    </h3>
-                    {data?.applications?.map((app, i) => (
-                      <ApplicationRow key={app.id} application={app} index={i} />
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Middle Column - Stats & Activity */}
-                <div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '28px', marginBottom: '28px' }}>
-                    {/* Progress Card */}
-                    <div className="glass-card" style={{ padding: '28px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-                        <div>
-                          <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px', color: '#2D2D3A' }}>Aktivnost</h3>
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                            <span style={{ fontSize: '38px', fontWeight: '800', color: '#2D2D3A', letterSpacing: '-1px' }}>
-                              {data?.stats?.thisWeekHours}
-                            </span>
-                            <div>
-                              <span style={{ fontSize: '15px', color: '#888', fontWeight: '500' }}>h</span>
-                              <p style={{ fontSize: '11px', color: '#aaa', margin: '2px 0 0' }}>ove nedelje</p>
-                            </div>
-                          </div>
-                        </div>
-                        <button style={{
-                          width: '36px', height: '36px', borderRadius: '12px',
-                          background: 'rgba(0,0,0,0.04)', border: 'none', cursor: 'pointer',
-                          fontSize: '14px', color: '#888'
-                        }}>↗</button>
-                      </div>
-                      <NotchedProgressBar data={data?.weeklyActivity || []} />
-                    </div>
-                    
-                    {/* Circular Progress */}
-                    <div className="glass-card" style={{ 
-                      padding: '28px', display: 'flex', flexDirection: 'column', 
-                      alignItems: 'center', justifyContent: 'center' 
-                    }}>
-                      <CircularProgress 
-                        percent={data?.stats?.completionRate || 0} 
-                        size={150} 
-                        strokeWidth={14}
-                        value={`${data?.stats?.completionRate}%`}
-                        label="Completion"
-                      />
-                      <p style={{ fontSize: '13px', color: '#888', marginTop: '20px', textAlign: 'center' }}>
-                        Uspešno završenih kampanja
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Recent Clips */}
-                  <div className="glass-card" style={{ padding: '28px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                      <h3 style={{ fontSize: '16px', fontWeight: '700', margin: 0, color: '#2D2D3A' }}>🎬 Poslednji klipovi</h3>
-                      <button className="btn-secondary" onClick={() => setActiveSection('clips')} style={{ padding: '10px 20px' }}>
-                        Vidi sve →
-                      </button>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '18px' }}>
-                      {data?.clips?.slice(0, 4).map((clip, i) => (
-                        <ClipCard key={clip.id} clip={clip} index={i} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Right Column - Opportunities (Dark) */}
-                <div className="dark-card" style={{ padding: '28px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                    <div>
-                      <h3 style={{ fontSize: '18px', fontWeight: '700', margin: '0 0 4px' }}>Prilike</h3>
-                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-                        {data?.opportunities?.length} dostupnih
-                      </p>
-                    </div>
-                    <span style={{
-                      background: 'linear-gradient(135deg, #F7CD4A, #E8B93A)', color: '#3D3520',
-                      padding: '8px 14px', borderRadius: '12px',
-                      fontSize: '14px', fontWeight: '700',
-                      boxShadow: '0 2px 8px rgba(245, 200, 66, 0.3)'
-                    }}>{data?.opportunities?.length}</span>
-                  </div>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {data?.opportunities?.slice(0, 5).map((opp, i) => (
-                      <OpportunityMini key={opp.id} opportunity={opp} index={i} onApply={setSelectedOpportunity} />
-                    ))}
-                  </div>
-                  
-                  <button className="btn-primary" onClick={() => setActiveSection('opportunities')} 
-                          style={{ width: '100%', marginTop: '24px' }}>
-                    Vidi sve prilike →
-                  </button>
-                </div>
-                
-              </div>
-            </>
-          )}
-          
-          {activeSection === 'opportunities' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '24px' }}>
-              {data?.opportunities?.map((opp, i) => (
-                <div key={opp.id} className="glass-card" style={{ padding: '28px', animation: `fadeIn 0.4s ease ${i * 0.08}s both` }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                    <span className="tag tag-yellow">🔥 Novo</span>
-                    <span style={{ fontSize: '12px', color: '#888', fontWeight: '500' }}>{opp.platform}</span>
-                  </div>
-                  <h3 style={{ fontSize: '24px', fontWeight: '700', margin: '0 0 10px', color: '#2D2D3A', letterSpacing: '-0.5px' }}>{opp.clientName}</h3>
-                  <p style={{ fontSize: '14px', color: '#666', lineHeight: 1.6, marginBottom: '24px' }}>{opp.description}</p>
-                  <div style={{
-                    display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px',
-                    background: 'rgba(0,0,0,0.06)', borderRadius: '18px', overflow: 'hidden', marginBottom: '24px'
-                  }}>
-                    {[
-                      { label: 'HONORAR', value: formatCurrency(opp.payment), suffix: ' RSD' },
-                      { label: 'VIEWS', value: formatNumber(opp.viewsRequired), suffix: '' },
-                      { label: 'ROK', value: formatDate(opp.deadline), suffix: '' }
-                    ].map((item, idx) => (
-                      <div key={idx} style={{ textAlign: 'center', padding: '18px', background: 'linear-gradient(145deg, #FFFCF5, #FFF5E1)' }}>
-                        <p style={{ fontSize: '10px', color: '#8B7355', fontWeight: '600', margin: '0 0 6px', letterSpacing: '1px' }}>{item.label}</p>
-                        <p style={{ fontSize: '18px', fontWeight: '800', color: '#2D2D3A', margin: 0 }}>{item.value}<span style={{ fontSize: '11px', fontWeight: '600' }}>{item.suffix}</span></p>
-                      </div>
-                    ))}
-                  </div>
-                  <button className="btn-primary" onClick={() => setSelectedOpportunity(opp)} style={{ width: '100%' }}>
-                    ✨ Prijavi se
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          {activeSection === 'applications' && (
-            <div className="glass-card" style={{ padding: '36px', maxWidth: '800px' }}>
-              <h2 style={{ fontSize: '26px', fontWeight: '700', margin: '0 0 28px', color: '#2D2D3A', letterSpacing: '-0.5px' }}>📋 Moje prijave</h2>
-              {data?.applications?.map((app, i) => (
-                <ApplicationRow key={app.id} application={app} index={i} />
-              ))}
-            </div>
-          )}
-          
-          {activeSection === 'clips' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '24px' }}>
-              {data?.clips?.map((clip, i) => <ClipCard key={clip.id} clip={clip} index={i} />)}
-            </div>
-          )}
-          
-          {activeSection === 'profile' && (
-            <div className="glass-card" style={{ padding: '36px', maxWidth: '950px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '28px', marginBottom: '36px' }}>
-                <img src={data?.influencer?.photo} alt="" style={{
-                  width: '110px', height: '110px', borderRadius: '28px', objectFit: 'cover',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.1)'
-                }} />
-                <div>
-                  <h2 style={{ fontSize: '30px', fontWeight: '700', margin: '0 0 6px', color: '#2D2D3A', letterSpacing: '-0.5px' }}>
-                    {data?.influencer?.name}
-                  </h2>
-                  <p style={{ fontSize: '14px', color: '#888', margin: 0 }}>{data?.influencer?.tiktokHandle} • {data?.influencer?.city}</p>
-                </div>
-                <button className="btn-primary" style={{ marginLeft: 'auto' }}>✏️ Izmeni profil</button>
-              </div>
+              {/* Income Chart */}
+              <IncomeChart data={data?.weeklyIncome || []} />
               
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '18px' }}>
-                <ProfileField icon="📱" label="Telefon" value={data?.influencer?.phone} />
-                <ProfileField icon="📍" label="Grad" value={data?.influencer?.city} />
-                <ProfileField icon="🎵" label="TikTok" value={data?.influencer?.tiktokHandle} />
-                <ProfileField icon="📸" label="Instagram" value={data?.influencer?.instagramHandle} />
-                <ProfileField icon="👕" label="Veličina majice" value={data?.influencer?.shirtSize} />
-                <ProfileField icon="👖" label="Veličina pantalona" value={data?.influencer?.pantsSize} />
-                <ProfileField icon="👟" label="Broj cipela" value={data?.influencer?.shoeSize} />
-              </div>
-              
-              <div style={{ marginTop: '28px', padding: '24px', background: 'rgba(255,255,255,0.5)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.6)' }}>
-                <label style={{ fontSize: '12px', fontWeight: '600', color: '#2D2D3A', display: 'block', marginBottom: '16px', letterSpacing: '0.5px' }}>
-                  🏷️ KATEGORIJE
-                </label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                  {['Beauty', 'Fashion', 'Fitness', 'Food', 'Tech', 'Travel', 'Gaming', 'Lifestyle'].map(cat => (
-                    <span key={cat} style={{
-                      padding: '12px 20px', borderRadius: '100px', fontSize: '13px', fontWeight: '600',
-                      background: data?.influencer?.categories?.includes(cat) 
-                        ? 'linear-gradient(135deg, #F7CD4A, #E8B93A)' 
-                        : 'white',
-                      color: data?.influencer?.categories?.includes(cat) ? '#3D3520' : '#888',
-                      cursor: 'pointer', transition: 'all 0.25s ease',
-                      boxShadow: data?.influencer?.categories?.includes(cat) 
-                        ? '0 2px 8px rgba(245, 200, 66, 0.3)' 
-                        : '0 1px 4px rgba(0,0,0,0.04)',
-                      border: '1px solid rgba(0,0,0,0.04)'
-                    }}>{cat}</span>
+              {/* Bottom row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' }}>
+                {/* Connections */}
+                <div className="card-static" style={{ padding: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: '600', margin: 0 }}>Let's Connect</h3>
+                    <button style={{ background: 'none', border: 'none', color: '#888', fontSize: '12px', cursor: 'pointer' }}>See all</button>
+                  </div>
+                  {data?.connections?.map(person => (
+                    <ConnectionCard key={person.id} person={person} onConnect={() => {}} />
                   ))}
                 </div>
+                
+                {/* Premium Card */}
+                <PremiumCard />
+                
+                {/* Barcode Progress */}
+                <BarcodeProgress 
+                  sent={data?.stats?.proposalsSent || 0} 
+                  interviews={data?.stats?.interviews || 0} 
+                  hires={data?.stats?.hires || 0} 
+                />
               </div>
             </div>
-          )}
+            
+            {/* Right Column - Projects */}
+            <div className="card-static" style={{ padding: '0', height: 'fit-content' }}>
+              <div style={{ padding: '24px 24px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '600', margin: 0 }}>Your Recent Projects</h3>
+                <button style={{ background: 'none', border: 'none', color: '#888', fontSize: '12px', cursor: 'pointer' }}>See all Project</button>
+              </div>
+              
+              {data?.projects?.map((project, i) => (
+                <ProjectCard 
+                  key={project.id} 
+                  project={project} 
+                  isExpanded={expandedProject === i}
+                  onToggle={() => setExpandedProject(expandedProject === i ? -1 : i)}
+                />
+              ))}
+            </div>
+            
+          </div>
           
         </div>
       </div>
-      
-      {selectedOpportunity && (
-        <ApplyModal 
-          opportunity={selectedOpportunity} 
-          onClose={() => setSelectedOpportunity(null)}
-          onSubmit={handleApply}
-        />
-      )}
     </>
   );
 }
