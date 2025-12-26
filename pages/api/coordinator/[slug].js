@@ -244,10 +244,32 @@ export default async function handler(req, res) {
     const acceptedToday = offers.filter(o => o.status === 'Accepted' && o.responseDate === today);
     const declinedToday = offers.filter(o => o.status === 'Declined' && o.responseDate === today);
 
-    const waitingContent = processedClips.filter(c => c.clipStatus === 'In Progress');
-    const publishedClips = processedClips.filter(c => c.status === 'Published' || c.status === 'Done');
+    // More flexible filtering
+    const waitingContent = processedClips.filter(c => 
+      c.clipStatus === 'In Progress' || 
+      c.clipStatus === 'Active' ||
+      c.status === 'Draft'
+    );
+    
+    // Published = has views OR has publish date OR status contains publish/done/paid
+    const publishedClips = processedClips.filter(c => {
+      const status = (c.status || '').toLowerCase();
+      const clipStatus = (c.clipStatus || '').toLowerCase();
+      return status === 'published' || 
+             status === 'done' || 
+             status === 'paid' ||
+             clipStatus === 'done' ||
+             clipStatus === 'published' ||
+             (c.publishDate && c.views > 0);
+    });
+    
     const publishedRecent = publishedClips.slice(0, 50);
-    const publishedToday = publishedClips.filter(c => c.publishDate === today);
+    
+    // Today's clips
+    const publishedToday = publishedClips.filter(c => {
+      if (!c.publishDate) return false;
+      return c.publishDate.startsWith(today);
+    });
 
     // Return response
     res.status(200).json({
@@ -266,7 +288,10 @@ export default async function handler(req, res) {
         declinedToday: declinedToday.length,
         waitingContent: waitingContent.length,
         publishedToday: publishedToday.length,
-        viewsToday: publishedToday.reduce((sum, c) => sum + c.views, 0)
+        viewsToday: publishedToday.reduce((sum, c) => sum + c.views, 0),
+        // Debug
+        _totalClips: processedClips.length,
+        _publishedClips: publishedClips.length
       },
       offers: {
         pending: pendingOffers,
@@ -278,7 +303,7 @@ export default async function handler(req, res) {
         waitingContent: waitingContent.slice(0, 20),
         needsReview: [],
         publishedRecent,
-        publishedToday // Add today's clips
+        publishedToday
       },
       months: activeMonths
     });
