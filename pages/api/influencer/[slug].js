@@ -23,8 +23,11 @@ export default async function handler(req, res) {
 
   try {
     // ============ 1. FETCH INFLUENCER BY SLUG ============
-    // Slug can be: record ID, TikTok handle (without @), or name
+    // Slug can be: record ID, TikTok username (from URL), or name
     let influencerRecord = null;
+    
+    // Clean up slug - remove @ if present
+    const cleanSlug = slug.replace('@', '').toLowerCase().trim();
     
     // Try to find by Record ID first
     if (slug.startsWith('rec')) {
@@ -35,16 +38,16 @@ export default async function handler(req, res) {
       }
     }
     
-    // If not found, search by TikTok handle or name
+    // If not found, search by TikTok Link (contains username) or Influencer Name
     if (!influencerRecord) {
       const searchResults = await base('Influencers')
         .select({
           filterByFormula: `OR(
-            LOWER({TikTok Handle}) = LOWER("${slug}"),
-            LOWER({TikTok Handle}) = LOWER("@${slug}"),
-            LOWER(SUBSTITUTE({TikTok Handle}, "@", "")) = LOWER("${slug}"),
-            LOWER({Influencer Name}) = LOWER("${slug}"),
-            {Slug} = "${slug}"
+            FIND("${cleanSlug}", LOWER({Tiktok Link})),
+            FIND("@${cleanSlug}", LOWER({Tiktok Link})),
+            LOWER({Influencer Name}) = "${cleanSlug}",
+            SUBSTITUTE(LOWER({Influencer Name}), " ", "-") = "${cleanSlug}",
+            SUBSTITUTE(LOWER({Influencer Name}), " ", "") = "${cleanSlug}"
           )`,
           maxRecords: 1
         })
@@ -55,28 +58,49 @@ export default async function handler(req, res) {
       }
     }
     
+    // If still not found, try partial name match
+    if (!influencerRecord) {
+      const partialResults = await base('Influencers')
+        .select({
+          filterByFormula: `FIND("${cleanSlug}", LOWER({Influencer Name}))`,
+          maxRecords: 1
+        })
+        .all();
+      
+      if (partialResults.length > 0) {
+        influencerRecord = partialResults[0];
+      }
+    }
+    
     if (!influencerRecord) {
       return res.status(404).json({ error: 'Influencer not found', slug });
     }
 
     // ============ 2. FORMAT INFLUENCER DATA ============
+    // Extract TikTok handle from full URL
+    const tiktokLink = influencerRecord.fields['Tiktok Link'] || '';
+    const tiktokHandle = tiktokLink.match(/@([^/?]+)/)?.[1] || tiktokLink.split('/').pop()?.replace('@', '') || '';
+    
     const influencer = {
       id: influencerRecord.id,
-      name: influencerRecord.fields['Influencer Name'] || influencerRecord.fields['Name'] || 'Unknown',
+      name: influencerRecord.fields['Influencer Name'] || 'Unknown',
       photo: influencerRecord.fields['Influencer_Image']?.[0]?.url || 
              influencerRecord.fields['Photo']?.[0]?.url || 
              influencerRecord.fields['Image']?.[0]?.url || null,
-      tiktokHandle: influencerRecord.fields['TikTok Handle'] || influencerRecord.fields['TikTok'] || '',
-      instagramHandle: influencerRecord.fields['Instagram Handle'] || influencerRecord.fields['Instagram'] || '',
-      phone: influencerRecord.fields['Phone'] || influencerRecord.fields['Telefon'] || '',
-      email: influencerRecord.fields['Email'] || '',
-      city: influencerRecord.fields['City'] || influencerRecord.fields['Grad'] || '',
-      shirtSize: influencerRecord.fields['Shirt Size'] || influencerRecord.fields['Veličina majice'] || '',
-      pantsSize: influencerRecord.fields['Pants Size'] || influencerRecord.fields['Veličina pantalona'] || '',
-      shoeSize: influencerRecord.fields['Shoe Size'] || influencerRecord.fields['Broj cipela'] || '',
-      categories: influencerRecord.fields['Categories'] || influencerRecord.fields['Kategorije'] || [],
-      bio: influencerRecord.fields['Bio'] || '',
-      status: influencerRecord.fields['Status'] || 'Active'
+      tiktokHandle: tiktokHandle ? `@${tiktokHandle}` : '',
+      tiktokLink: tiktokLink,
+      instagramHandle: influencerRecord.fields['Instagram'] || influencerRecord.fields['Instagram Link'] || '',
+      phone: influencerRecord.fields['Contact Number'] || influencerRecord.fields['Phone'] || '',
+      email: influencerRecord.fields['E-mail'] || influencerRecord.fields['Email'] || '',
+      city: influencerRecord.fields['City'] || '',
+      gender: influencerRecord.fields['Gender'] || '',
+      niche: influencerRecord.fields['Niche'] || '',
+      agreement: influencerRecord.fields['Agreement'] || '',
+      shirtSize: influencerRecord.fields['Shirt Size'] || '',
+      pantsSize: influencerRecord.fields['Pants Size'] || '',
+      shoeSize: influencerRecord.fields['Shoe Size'] || '',
+      categories: influencerRecord.fields['Niche'] ? [influencerRecord.fields['Niche']] : [],
+      status: influencerRecord.fields['Agreement'] || 'Active'
     };
 
     // ============ 3. FETCH CLIPS FOR THIS INFLUENCER ============
