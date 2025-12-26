@@ -563,58 +563,92 @@ const ClipModal = ({ clip, onClose }) => {
   );
 };
 
-// Package Tracking Section
-const PackageSection = ({ packages = [], onAddPackage }) => {
+// Package Tracking Section - COLLAPSIBLE
+const PackageSection = ({ packages = [], onAddPackage, isExpanded, onToggle }) => {
   const pending = packages.filter(p => p.status === 'Pending');
   const sent = packages.filter(p => p.status === 'Sent');
   const delivered = packages.filter(p => p.status === 'Delivered');
+  const total = packages.length;
   
   return (
-    <GlassCard style={{ marginBottom: '24px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h2 style={{ fontSize: '16px', fontWeight: '700', margin: 0, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          📦 Paketi
-        </h2>
-        <button onClick={onAddPackage} style={{
-          padding: '6px 12px', background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
-          border: 'none', borderRadius: '8px', color: '#fff', fontSize: '12px', fontWeight: '600', cursor: 'pointer'
+    <div style={{ marginBottom: '20px' }}>
+      {/* Toggle Button */}
+      <button onClick={onToggle} style={{
+        width: '100%', padding: '14px 20px',
+        background: isExpanded ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.1))' : 'rgba(255,255,255,0.03)',
+        border: isExpanded ? '1px solid rgba(139, 92, 246, 0.4)' : '1px solid rgba(255,255,255,0.08)',
+        borderRadius: isExpanded ? '16px 16px 0 0' : '16px',
+        color: '#fff', cursor: 'pointer', transition: 'all 0.3s ease',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontSize: '20px' }}>📦</span>
+          <span style={{ fontSize: '15px', fontWeight: '700' }}>Praćenje paketa</span>
+          {total > 0 && (
+            <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: 'rgba(139, 92, 246, 0.3)', color: '#a78bfa' }}>
+              {total}
+            </span>
+          )}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {!isExpanded && total > 0 && (
+            <div style={{ display: 'flex', gap: '12px', fontSize: '12px' }}>
+              <span style={{ color: '#f97316' }}>⏳ {pending.length}</span>
+              <span style={{ color: '#3b82f6' }}>🚚 {sent.length}</span>
+              <span style={{ color: '#22c55e' }}>✅ {delivered.length}</span>
+            </div>
+          )}
+          <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', transition: 'transform 0.3s', transform: isExpanded ? 'rotate(180deg)' : 'none' }}>▼</span>
+        </div>
+      </button>
+      
+      {/* Expanded Content */}
+      {isExpanded && (
+        <div className="glass" style={{
+          borderRadius: '0 0 16px 16px', padding: '20px',
+          border: '1px solid rgba(139, 92, 246, 0.4)', borderTop: 'none',
+          animation: 'fadeIn 0.3s ease'
         }}>
-          + Dodaj
-        </button>
-      </div>
-      
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-        <div style={{ padding: '14px', background: 'rgba(249, 115, 22, 0.1)', borderRadius: '12px', border: '1px solid rgba(249, 115, 22, 0.3)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '16px' }}>⏳</span>
-            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)', fontWeight: '600' }}>ČEKA SLANJE</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ padding: '14px', background: 'rgba(249, 115, 22, 0.1)', borderRadius: '12px', border: '1px solid rgba(249, 115, 22, 0.3)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '16px' }}>⏳</span>
+                <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)', fontWeight: '600' }}>ČEKA SLANJE</span>
+              </div>
+              <p style={{ fontSize: '28px', fontWeight: '800', margin: 0, color: '#f97316' }}>{pending.length}</p>
+            </div>
+            
+            <div style={{ padding: '14px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '16px' }}>🚚</span>
+                <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)', fontWeight: '600' }}>U DOSTAVI</span>
+              </div>
+              <p style={{ fontSize: '28px', fontWeight: '800', margin: 0, color: '#3b82f6' }}>{sent.length}</p>
+            </div>
+            
+            <div style={{ padding: '14px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '12px', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '16px' }}>✅</span>
+                <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)', fontWeight: '600' }}>DOSTAVLJENO</span>
+              </div>
+              <p style={{ fontSize: '28px', fontWeight: '800', margin: 0, color: '#22c55e' }}>{delivered.length}</p>
+            </div>
           </div>
-          <p style={{ fontSize: '28px', fontWeight: '800', margin: 0, color: '#f97316' }}>{pending.length}</p>
+          
+          <button onClick={onAddPackage} style={{
+            width: '100%', padding: '12px',
+            background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+            border: 'none', borderRadius: '10px', color: '#fff',
+            fontSize: '13px', fontWeight: '600', cursor: 'pointer',
+            transition: 'transform 0.2s, box-shadow 0.2s'
+          }}
+          onMouseEnter={(e) => { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 10px 30px rgba(139, 92, 246, 0.4)'; }}
+          onMouseLeave={(e) => { e.target.style.transform = 'none'; e.target.style.boxShadow = 'none'; }}>
+            + Dodaj novi paket
+          </button>
         </div>
-        
-        <div style={{ padding: '14px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '16px' }}>🚚</span>
-            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)', fontWeight: '600' }}>U DOSTAVI</span>
-          </div>
-          <p style={{ fontSize: '28px', fontWeight: '800', margin: 0, color: '#3b82f6' }}>{sent.length}</p>
-        </div>
-        
-        <div style={{ padding: '14px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '12px', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '16px' }}>✅</span>
-            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)', fontWeight: '600' }}>DOSTAVLJENO</span>
-          </div>
-          <p style={{ fontSize: '28px', fontWeight: '800', margin: 0, color: '#22c55e' }}>{delivered.length}</p>
-        </div>
-      </div>
-      
-      {packages.length === 0 && (
-        <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', padding: '20px 0', fontSize: '13px' }}>
-          Nema paketa za praćenje. Klikni "+ Dodaj" za novi paket.
-        </p>
       )}
-    </GlassCard>
+    </div>
   );
 };
 
@@ -643,7 +677,10 @@ export default function CoordinatorDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [packages, setPackages] = useState([]);
+  const [packagesExpanded, setPackagesExpanded] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
+  const [dateFilter, setDateFilter] = useState('active');
+  const [sortBy, setSortBy] = useState('progress');
 
   useEffect(() => {
     if (!slug) return;
@@ -668,10 +705,51 @@ export default function CoordinatorDashboard() {
   const filteredCampaigns = useMemo(() => {
     if (!data?.months) return [];
     let filtered = [...data.months];
+    
+    // Date-based filtering
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+    
+    if (dateFilter === 'active') {
+      // Active = started and not ended, or ending this month
+      filtered = filtered.filter(c => {
+        if (!c.startDate) return false;
+        const start = new Date(c.startDate);
+        const end = c.endDate ? new Date(c.endDate.split('/').reverse().join('-')) : null;
+        // Started and (no end date OR end date is in future or this month)
+        return start <= now && (!end || end >= new Date(thisYear, thisMonth, 1));
+      });
+    } else if (dateFilter === 'thisMonth') {
+      filtered = filtered.filter(c => {
+        if (!c.startDate) return false;
+        const start = new Date(c.startDate);
+        return start.getMonth() === thisMonth && start.getFullYear() === thisYear;
+      });
+    } else if (dateFilter === 'lastMonth') {
+      const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
+      const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
+      filtered = filtered.filter(c => {
+        if (!c.startDate) return false;
+        const start = new Date(c.startDate);
+        return start.getMonth() === lastMonth && start.getFullYear() === lastMonthYear;
+      });
+    } else if (dateFilter === 'future') {
+      filtered = filtered.filter(c => {
+        if (!c.startDate) return true;
+        const start = new Date(c.startDate);
+        return start > now;
+      });
+    }
+    // 'all' shows everything
+    
+    // Search query
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(c => c.month?.toLowerCase().includes(q));
     }
+    
+    // Status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(c => {
         const s = c.progressStatus?.toLowerCase() || '';
@@ -683,8 +761,25 @@ export default function CoordinatorDashboard() {
         return true;
       });
     }
+    
+    // Sorting
+    filtered.sort((a, b) => {
+      if (sortBy === 'progress') {
+        return (a.percentDelivered || 0) - (b.percentDelivered || 0); // Lowest first (need attention)
+      } else if (sortBy === 'progressDesc') {
+        return (b.percentDelivered || 0) - (a.percentDelivered || 0); // Highest first
+      } else if (sortBy === 'views') {
+        return (b.totalViews || 0) - (a.totalViews || 0);
+      } else if (sortBy === 'date') {
+        return new Date(b.startDate || 0) - new Date(a.startDate || 0); // Newest first
+      } else if (sortBy === 'name') {
+        return (a.month || '').localeCompare(b.month || '');
+      }
+      return 0;
+    });
+    
     return filtered;
-  }, [data?.months, searchQuery, statusFilter]);
+  }, [data?.months, searchQuery, statusFilter, dateFilter, sortBy]);
 
   const handleAddPackage = () => {
     alert('Package tracking coming soon! Ova funkcija će biti dostupna uskoro.');
@@ -756,26 +851,63 @@ export default function CoordinatorDashboard() {
                           items={data.clips?.publishedToday || []} />
           </div>
 
-          {/* Package Section */}
-          <PackageSection packages={packages} onAddPackage={handleAddPackage} />
+          {/* Package Section - Collapsible */}
+          <PackageSection packages={packages} onAddPackage={handleAddPackage} 
+                          isExpanded={packagesExpanded} onToggle={() => setPackagesExpanded(!packagesExpanded)} />
 
           {/* Main Content */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '28px' }}>
             
             {/* Left - Campaigns */}
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <SectionHeader icon="📈" title="Aktivne kampanje" count={filteredCampaigns.length} />
-                <div style={{ display: 'flex', gap: '10px' }}>
+              {/* Filters Row */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+                <SectionHeader icon="📈" title="Kampanje" count={filteredCampaigns.length} />
+                
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {/* Date Filter Tabs */}
+                  <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '3px' }}>
+                    {[
+                      { value: 'active', label: '🔥 Aktivne' },
+                      { value: 'thisMonth', label: 'Ovaj mesec' },
+                      { value: 'lastMonth', label: 'Prošli' },
+                      { value: 'future', label: 'Buduće' },
+                      { value: 'all', label: 'Sve' }
+                    ].map(tab => (
+                      <button key={tab.value} onClick={() => setDateFilter(tab.value)}
+                              style={{
+                                padding: '6px 10px', border: 'none', borderRadius: '6px', cursor: 'pointer',
+                                fontSize: '11px', fontWeight: '600', transition: 'all 0.2s',
+                                background: dateFilter === tab.value ? 'rgba(139, 92, 246, 0.4)' : 'transparent',
+                                color: dateFilter === tab.value ? '#fff' : 'rgba(255,255,255,0.5)'
+                              }}>
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Search */}
                   <input type="text" placeholder="🔍 Pretraži..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                         style={{ padding: '8px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', fontSize: '12px', width: '160px', outline: 'none' }} />
+                         style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', fontSize: '11px', width: '130px', outline: 'none' }} />
+                  
+                  {/* Status Filter */}
                   <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-                          style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', fontSize: '12px', cursor: 'pointer', outline: 'none' }}>
-                    <option value="all" style={{ background: '#1a1a2e' }}>Svi</option>
+                          style={{ padding: '6px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', fontSize: '11px', cursor: 'pointer', outline: 'none' }}>
+                    <option value="all" style={{ background: '#1a1a2e' }}>Status: Svi</option>
                     <option value="critical" style={{ background: '#1a1a2e' }}>💀 Kritično</option>
                     <option value="behind" style={{ background: '#1a1a2e' }}>🔴 Kasni</option>
                     <option value="ontrack" style={{ background: '#1a1a2e' }}>🟡 Na putu</option>
                     <option value="ahead" style={{ background: '#1a1a2e' }}>🟢 OK</option>
+                  </select>
+                  
+                  {/* Sort */}
+                  <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
+                          style={{ padding: '6px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', fontSize: '11px', cursor: 'pointer', outline: 'none' }}>
+                    <option value="progress" style={{ background: '#1a1a2e' }}>⚠️ Treba pažnju</option>
+                    <option value="progressDesc" style={{ background: '#1a1a2e' }}>✅ Najbolje prvo</option>
+                    <option value="views" style={{ background: '#1a1a2e' }}>👁️ Najviše views</option>
+                    <option value="date" style={{ background: '#1a1a2e' }}>📅 Najnovije</option>
+                    <option value="name" style={{ background: '#1a1a2e' }}>🔤 Po imenu</option>
                   </select>
                 </div>
               </div>
