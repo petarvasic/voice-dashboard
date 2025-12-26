@@ -30,12 +30,16 @@ export default async function handler(req, res) {
         filterFormula = `{Status} = "${status}"`;
       }
       
+      const selectOptions = {
+        maxRecords: 500
+      };
+      
+      if (filterFormula) {
+        selectOptions.filterByFormula = filterFormula;
+      }
+      
       const records = await base('Shipments')
-        .select({
-          filterByFormula: filterFormula || '',
-          sort: [{ field: 'Created', direction: 'desc' }],
-          maxRecords: 500
-        })
+        .select(selectOptions)
         .all();
       
       const shipments = records.map(record => ({
