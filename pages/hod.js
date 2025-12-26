@@ -922,28 +922,30 @@ export default function HODDashboard() {
                   </p>
                 </div>
               ) : (
-                <style>{`
-                  .critical-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-                    gap: 20px;
-                  }
-                  @media (max-width: 600px) {
+                <>
+                  <style>{`
                     .critical-grid {
-                      grid-template-columns: 1fr;
-                      gap: 12px;
+                      display: grid;
+                      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+                      gap: 20px;
                     }
-                  }
-                `}</style>
-                <div className="critical-grid">
-                  {criticalCampaigns.map(campaign => (
-                    <CriticalAlertCard
-                      key={campaign.id}
-                      campaign={campaign}
-                      onClick={() => campaign.clientId && router.push(`/client/${campaign.clientId}`)}
-                    />
-                  ))}
-                </div>
+                    @media (max-width: 600px) {
+                      .critical-grid {
+                        grid-template-columns: 1fr;
+                        gap: 12px;
+                      }
+                    }
+                  `}</style>
+                  <div className="critical-grid">
+                    {criticalCampaigns.map(campaign => (
+                      <CriticalAlertCard
+                        key={campaign.id}
+                        campaign={campaign}
+                        onClick={() => campaign.clientId && router.push(`/client/${campaign.clientId}`)}
+                      />
+                    ))}
+                  </div>
+                </>
               )}
             </section>
           )}
@@ -951,28 +953,30 @@ export default function HODDashboard() {
           {/* Clients Tab */}
           {activeTab === 'clients' && !selectedClient && (
             <section>
-              <style>{`
-                .clients-grid {
-                  display: grid;
-                  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-                  gap: 20px;
-                }
-                @media (max-width: 600px) {
+              <>
+                <style>{`
                   .clients-grid {
-                    grid-template-columns: 1fr;
-                    gap: 12px;
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                    gap: 20px;
                   }
-                }
-              `}</style>
-              <div className="clients-grid">
-                {(data?.clientStats || []).map((clientData, i) => (
-                  <ClientCard
-                    key={i}
-                    clientData={clientData}
-                    onClick={() => setSelectedClient(clientData)}
-                  />
-                ))}
-              </div>
+                  @media (max-width: 600px) {
+                    .clients-grid {
+                      grid-template-columns: 1fr;
+                      gap: 12px;
+                    }
+                  }
+                `}</style>
+                <div className="clients-grid">
+                  {(data?.clientStats || []).map((clientData, i) => (
+                    <ClientCard
+                      key={i}
+                      clientData={clientData}
+                      onClick={() => setSelectedClient(clientData)}
+                    />
+                  ))}
+                </div>
+              </>
             </section>
           )}
 
