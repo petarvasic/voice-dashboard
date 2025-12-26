@@ -211,6 +211,7 @@ const GlassCard = ({ children, gradient = false, hover = true, onClick, style = 
 // Flip Card for Stats with clickable back showing clips
 const FlipStatCard = ({ icon, label, value, subValue, gradient = 'purple', clips = [], size = 'normal' }) => {
   const [isFlipped, setIsFlipped] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const isLarge = size === 'large';
   
   const gradients = {
@@ -230,6 +231,8 @@ const FlipStatCard = ({ icon, label, value, subValue, gradient = 'purple', clips
         perspective: '1000px',
         height: isLarge ? '160px' : '140px'
       }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <div
         onClick={() => hasClips && setIsFlipped(!isFlipped)}
@@ -255,10 +258,13 @@ const FlipStatCard = ({ icon, label, value, subValue, gradient = 'purple', clips
             borderRadius: '20px',
             padding: '20px',
             background: gradients[gradient],
-            border: '1px solid rgba(255,255,255,0.08)',
+            border: isHovered ? '1px solid rgba(236, 72, 153, 0.4)' : '1px solid rgba(255,255,255,0.08)',
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'space-between'
+            justifyContent: 'space-between',
+            transition: 'all 0.3s ease',
+            transform: isHovered && !isFlipped ? 'scale(1.02)' : 'scale(1)',
+            boxShadow: isHovered ? '0 10px 40px rgba(236, 72, 153, 0.2)' : 'none'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -275,8 +281,9 @@ const FlipStatCard = ({ icon, label, value, subValue, gradient = 'purple', clips
             {hasClips && (
               <span style={{ 
                 fontSize: '16px', 
-                color: 'rgba(255,255,255,0.3)',
-                transition: 'transform 0.3s ease'
+                color: isHovered ? '#ec4899' : 'rgba(255,255,255,0.3)',
+                transition: 'all 0.3s ease',
+                transform: isHovered ? 'rotate(180deg)' : 'rotate(0deg)'
               }}>
                 ↻
               </span>
@@ -302,11 +309,12 @@ const FlipStatCard = ({ icon, label, value, subValue, gradient = 'purple', clips
           {hasClips && (
             <p style={{ 
               fontSize: '10px', 
-              color: 'rgba(255,255,255,0.3)', 
+              color: isHovered ? '#ec4899' : 'rgba(255,255,255,0.3)', 
               margin: 0,
-              textAlign: 'center'
+              textAlign: 'center',
+              transition: 'color 0.3s ease'
             }}>
-              Klikni za detalje
+              Klikni za detalje →
             </p>
           )}
         </div>
@@ -410,6 +418,16 @@ const FlipStatCard = ({ icon, label, value, subValue, gradient = 'purple', clips
                 margin: '4px 0 0'
               }}>
                 +{clips.length - 5} više
+              </p>
+            )}
+            {clips.length === 0 && (
+              <p style={{ 
+                fontSize: '11px', 
+                color: 'rgba(255,255,255,0.4)', 
+                textAlign: 'center',
+                padding: '20px'
+              }}>
+                Nema klipova za danas
               </p>
             )}
           </div>
