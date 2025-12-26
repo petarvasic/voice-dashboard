@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     if (isHOD) {
       offersFormula = `OR({Status} = "Sent", {Status} = "Accepted", {Status} = "Declined", {Status} = "Active")`;
     } else {
-      offersFormula = `{Coordinator Name} = "${userName}"`;
+      offersFormula = `FIND("${userName}", {Coordinator Name})`;
     }
 
     let offers = [];
@@ -63,10 +63,10 @@ export default async function handler(req, res) {
       console.log('Offers table error:', e.message);
     }
 
-    // 3. Get contract months - filter by Coordinator Name
+    // 3. Get contract months - use FIND for lookup field
     let monthsFormula = `{Contract Status} = "Active"`;
     if (!isHOD) {
-      monthsFormula = `AND({Contract Status} = "Active", {Coordinator Name} = "${userName}")`;
+      monthsFormula = `AND({Contract Status} = "Active", FIND("${userName}", {Coordinator Name}))`;
     }
 
     const contractMonths = await base('Contract Months')
