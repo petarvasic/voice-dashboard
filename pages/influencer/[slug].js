@@ -781,16 +781,26 @@ export default function InfluencerDashboard() {
             padding: '14px 28px', marginBottom: '28px',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '38px', height: '38px', borderRadius: '12px',
-                background: 'linear-gradient(145deg, #3D3B73, #5D5B93)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 2px 8px rgba(61, 59, 115, 0.3)'
+            {/* VOICE Logo */}
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <img 
+                src="/VOICE__3_.png" 
+                alt="VOICE" 
+                style={{ height: '32px', width: 'auto' }}
+                onError={(e) => {
+                  // Fallback to text if image fails
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              {/* Fallback text logo */}
+              <div style={{ 
+                display: 'none', alignItems: 'center', gap: '0',
+                fontFamily: 'Plus Jakarta Sans', fontSize: '24px', 
+                fontWeight: '800', color: '#3D3B73', letterSpacing: '-1px'
               }}>
-                <span style={{ color: 'white', fontWeight: '800', fontSize: '15px' }}>V</span>
+                voice
               </div>
-              <span style={{ fontSize: '21px', fontWeight: '800', color: '#3D3B73', letterSpacing: '-0.5px' }}>voice</span>
             </div>
             
             <div style={{ 
@@ -848,7 +858,7 @@ export default function InfluencerDashboard() {
                 <div>
                   <div className="glass-card" style={{ padding: '0', overflow: 'hidden', marginBottom: '28px' }}>
                     {/* Profile Image with blur overlays */}
-                    <div style={{ position: 'relative', height: '320px' }}>
+                    <div style={{ position: 'relative', height: '380px' }}>
                       <img 
                         src={data?.influencer?.photo}
                         alt={data?.influencer?.name}
@@ -857,44 +867,46 @@ export default function InfluencerDashboard() {
                         }}
                       />
                       
-                      {/* Blurred stat overlays on image */}
-                      <BlurredStatOverlay icon="👁️" value={formatNumber(data?.stats?.totalViews)} label="views" position="top-right" />
+                      {/* Blurred stat overlays on image - top corners */}
                       <BlurredStatOverlay icon="🎬" value={data?.stats?.totalClips} label="klipova" position="top-left" />
+                      <BlurredStatOverlay icon="👁️" value={formatNumber(data?.stats?.totalViews)} label="views" position="top-right" />
                       
-                      {/* Bottom gradient with name */}
+                      {/* Glass bottom panel - like original */}
                       <div style={{
                         position: 'absolute', bottom: 0, left: 0, right: 0,
-                        background: 'linear-gradient(transparent, rgba(0,0,0,0.75))',
-                        padding: '80px 24px 24px', color: 'white'
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        backdropFilter: 'blur(20px)',
+                        WebkitBackdropFilter: 'blur(20px)',
+                        borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+                        padding: '24px', color: 'white'
                       }}>
-                        <h2 style={{ fontSize: '24px', fontWeight: '700', margin: '0 0 4px', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
+                        <h2 style={{ 
+                          fontSize: '28px', fontWeight: '700', margin: '0 0 4px', 
+                          color: 'white',
+                          textShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                        }}>
                           {data?.influencer?.name}
                         </h2>
-                        <p style={{ fontSize: '13px', opacity: 0.85, margin: 0 }}>
+                        <p style={{ 
+                          fontSize: '14px', 
+                          color: 'rgba(255,255,255,0.8)', 
+                          margin: 0 
+                        }}>
                           {data?.influencer?.tiktokHandle}
                         </p>
                       </div>
-                      
-                      {/* Earnings badge */}
-                      <div style={{
-                        position: 'absolute', bottom: '24px', right: '24px',
-                        background: 'linear-gradient(135deg, #F7CD4A, #E8B93A)',
-                        padding: '10px 18px', borderRadius: '14px',
-                        fontSize: '15px', fontWeight: '700', color: '#3D3520',
-                        boxShadow: '0 4px 16px rgba(245, 200, 66, 0.4)'
-                      }}>
-                        {formatCurrency(data?.stats?.pendingPayment)} RSD
-                      </div>
                     </div>
                     
-                    {/* Categories */}
-                    <div style={{ padding: '20px 24px' }}>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {/* Categories - clean bottom section */}
+                    <div style={{ padding: '20px 24px', background: 'rgba(255,255,255,0.5)' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                         {data?.influencer?.categories?.map(cat => (
                           <span key={cat} style={{
-                            padding: '8px 14px', borderRadius: '100px',
-                            background: 'rgba(0,0,0,0.04)', fontSize: '12px',
-                            fontWeight: '600', color: '#666'
+                            padding: '10px 18px', borderRadius: '100px',
+                            background: 'rgba(255,255,255,0.8)', 
+                            fontSize: '13px',
+                            fontWeight: '600', color: '#555',
+                            border: '1px solid rgba(0,0,0,0.06)'
                           }}>{cat}</span>
                         ))}
                       </div>
