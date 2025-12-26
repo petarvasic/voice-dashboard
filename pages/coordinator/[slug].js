@@ -814,10 +814,12 @@ const InfluencerDrawer = ({ influencer, campaign, clips, onClose }) => {
   
   if (!influencer) return null;
   
-  const influencerClips = clips?.filter(c => 
-    c.influencerName === influencer.name || 
-    c.influencerId === influencer.id
-  ) || [];
+  // Use clips from influencer object (from API) or filter from all clips
+  const influencerClips = influencer.clipsList || (clips || []).filter(c => {
+    const nameMatch = c.influencerName?.toLowerCase() === influencer.name?.toLowerCase();
+    const idMatch = c.influencerId === influencer.id;
+    return nameMatch || idMatch;
+  });
   
   return (
     <>
@@ -1260,10 +1262,27 @@ export default function CoordinatorDashboard() {
     return filtered;
   }, [data?.months, searchQuery, statusFilter]);
 
-  // All clips for drawer
+  // All clips for drawer - get from API response
   const allClips = useMemo(() => {
     return data?.clips?.publishedRecent || [];
   }, [data?.clips]);
+
+  // All clips with contract month IDs for proper filtering
+  const allClipsWithMonths = useMemo(() => {
+    if (!data?.months) return [];
+    
+    // Collect all clips from all campaigns
+    const clipsMap = new Map();
+    data.months.forEach(month => {
+      if (month.influencers) {
+        month.influencers.forEach(inf => {
+          // We need to get clips from the API response
+        });
+      }
+    });
+    
+    return data?.clips?.publishedRecent || [];
+  }, [data]);
 
   // Handle influencer click
   const handleInfluencerClick = useCallback((influencer, campaign) => {
