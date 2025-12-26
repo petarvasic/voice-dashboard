@@ -104,30 +104,41 @@ export default async function handler(req, res) {
     };
 
     // ============ 3. FETCH CLIPS FOR THIS INFLUENCER ============
-    const clipsRecords = await base('Clips')
-      .select({
-        filterByFormula: `FIND("${influencerRecord.id}", ARRAYJOIN({Influencer}))`,
-        sort: [{ field: 'Publish Date', direction: 'desc' }],
-        maxRecords: 50
-      })
-      .all();
+    // Clips table has "Influencer" as TEXT field (name), not a link
+    const influencerName = influencer.name;
+    
+    let clipsRecords = [];
+    try {
+      clipsRecords = await base('Clips')
+        .select({
+          filterByFormula: `OR(
+            {Influencer} = "${influencerName}",
+            FIND("${influencerName}", {Influencer})
+          )`,
+          sort: [{ field: 'Publish Date', direction: 'desc' }],
+          maxRecords: 100
+        })
+        .all();
+    } catch (e) {
+      console.log('Clips fetch error:', e.message);
+    }
 
     const clips = clipsRecords.map(record => ({
       id: record.id,
-      clipId: record.fields['Clip ID'] || '',
-      clientName: record.fields['Client Name (from Contract Months)']?.[0] || 
-                  record.fields['Client Name'] || 
-                  record.fields['Client']?.[0] || 'Unknown',
-      platform: record.fields['Social'] || record.fields['Platform'] || 'TikTok',
-      link: record.fields['Social Media link'] || record.fields['Link'] || '#',
+      clipId: record.fields['C.'] || record.fields['Clip ID'] || '',
+      clientName: record.fields['Client'] || 'Unknown',
+      platform: record.fields['Social'] || 'TikTok',
+      link: record.fields['Social Media link'] || '#',
       publishDate: record.fields['Publish Date'] || null,
       views: record.fields['Total Views'] || record.fields['Views'] || 0,
       likes: record.fields['Likes'] || 0,
       comments: record.fields['Comments'] || 0,
       shares: record.fields['Share'] || record.fields['Shares'] || 0,
       saves: record.fields['Saves'] || 0,
-      status: record.fields['Status'] || 'Published',
-      payment: record.fields['Payment'] || record.fields['Honorar'] || 0,
+      status: record.fields['Clip...'] || record.fields['Status'] || 'Done',
+      contractMonth: record.fields['Contract Months'] || '',
+      package: record.fields['Package'] || '',
+      payment: record.fields['Payment'] || record.fields['Payout'] || 0,
       paymentStatus: record.fields['Payment Status'] || 'Pending'
     }));
 
