@@ -1,5 +1,5 @@
 // pages/api/shipments/index.js
-// API for Shipments - GET all, POST new, PATCH update status, DELETE
+// API for Shipments - v5 with better error handling
 import Airtable from 'airtable';
 
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY })
@@ -22,14 +22,14 @@ export default async function handler(req, res) {
       try {
         const recs = await base('Influencers').select({ fields: ['Influencer Name'], maxRecords: 2000 }).all();
         recs.forEach(r => { influencerMap[r.id] = r.fields['Influencer Name'] || 'Unknown'; });
-      } catch (e) { console.log('Influencers error:', e.message); }
+      } catch (e) { console.log('Influencers fetch error:', e.message); }
 
       // Get campaign names
       const campaignMap = {};
       try {
         const recs = await base('Contract Months').select({ fields: ['Month'], maxRecords: 1000 }).all();
         recs.forEach(r => { campaignMap[r.id] = r.fields['Month'] || 'Unknown'; });
-      } catch (e) { console.log('Campaigns error:', e.message); }
+      } catch (e) { console.log('Campaigns fetch error:', e.message); }
 
       // Get shipments
       const records = await base('Shipments').select({ maxRecords: 500 }).all();
@@ -39,9 +39,6 @@ export default async function handler(req, res) {
         const influencerId = f['Influencer']?.[0] || null;
         const contractMonthId = f['Contract Month']?.[0] || null;
         
-        // Content comes from Notes field (what coordinator typed)
-        const packageContent = f['Notes'] || '';
-        
         return {
           id: record.id,
           name: f['Shipment Name'] || '',
@@ -50,7 +47,7 @@ export default async function handler(req, res) {
           contractMonthId,
           contractMonthName: contractMonthId ? (campaignMap[contractMonthId] || 'Bez kampanje') : 'Bez kampanje',
           status: f['Status'] || 'Čeka slanje',
-          packageContent, // This is what coordinator typed
+          packageContent: f['Notes'] || '',
           trackingNumber: f['Tracking Number'] || '',
           courier: f['Courier'] || '',
           sentDate: f['Sent Date'] || null,
@@ -77,23 +74,26 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const { influencerId, contractMonthId, coordinatorId, items, courier, notes } = req.body;
     
+    console.log('POST request body:', JSON.stringify(req.body, null, 2));
+    
     if (!influencerId || !contractMonthId) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      return res.status(400).json({ error: 'Missing required fields: influencerId and contractMonthId are required' });
     }
     
     try {
-      const fields = { 'Status': 'Čeka slanje' };
+      // Build fields object - ONLY include fields that exist in Airtable
+      const fields = {
+        'Status': 'Čeka slanje',
+        'Shipment Name': `SHP-${Date.now().toString(36).toUpperCase()}`,
+        'Influencer': [influencerId],
+        'Contract Month': [contractMonthId]
+      };
       
-      // Generate unique name
-      fields['Shipment Name'] = `SHP-${Date.now().toString(36).toUpperCase()}`;
+      // Only add Coordinator if it exists and is provided
+      // REMOVED: Some Airtable setups don't have this field
+      // if (coordinatorId) fields['Coordinator'] = [coordinatorId];
       
-      // Links
-      if (influencerId) fields['Influencer'] = [influencerId];
-      if (contractMonthId) fields['Contract Month'] = [contractMonthId];
-      if (coordinatorId) fields['Coordinator'] = [coordinatorId];
-      
-      // Package content goes directly to Notes (what coordinator typed in "SADRŽAJ PAKETA")
-      // Combine items input and notes into one Notes field
+      // Package content goes to Notes field
       let notesContent = '';
       if (items && items.trim()) {
         notesContent = items.trim();
@@ -105,13 +105,17 @@ export default async function handler(req, res) {
         fields['Notes'] = notesContent;
       }
       
-      // Courier
-      const validCouriers = ['Pošta', 'Preuzimanje u kancelariji', 'Glovo/Wolt'];
+      // Courier - only if valid
+      const validCouriers = ['Pošta', 'Preuzimanje u kancelariji', 'Glovo/Wolt', 'Kurir'];
       if (courier && validCouriers.includes(courier)) {
         fields['Courier'] = courier;
       }
       
+      console.log('Creating shipment with fields:', JSON.stringify(fields, null, 2));
+      
       const newRecord = await base('Shipments').create([{ fields }]);
+      
+      console.log('Shipment created successfully:', newRecord[0].id);
       
       return res.status(201).json({
         success: true,
@@ -120,7 +124,15 @@ export default async function handler(req, res) {
       });
     } catch (error) {
       console.error('POST error:', error);
-      return res.status(500).json({ error: 'Failed to create', details: error.message });
+      console.error('Error type:', error.error);
+      console.error('Error message:', error.message);
+      
+      // Return more detailed error
+      return res.status(500).json({ 
+        error: 'Failed to create', 
+        details: error.message,
+        airtableError: error.error || null
+      });
     }
   }
   
@@ -144,7 +156,9 @@ export default async function handler(req, res) {
         }
       }
       
-      if (trackingNumber !== undefined) updateFields['Tracking Number'] = trackingNumber;
+      if (trackingNumber !== undefined) {
+        updateFields['Tracking Number'] = trackingNumber;
+      }
       
       await base('Shipments').update([{ id: shipmentId, fields: updateFields }]);
       
