@@ -115,7 +115,10 @@ export default async function handler(req, res) {
       // Notes is a text field
       if (notes) fields['Notes'] = notes;
       
-      // Don't set Shipment Name - let Airtable auto-generate it or use formula
+      // Shipment Name is REQUIRED (Primary Key) - generate unique name
+      const timestamp = Date.now();
+      const shortId = timestamp.toString(36).toUpperCase();
+      fields['Shipment Name'] = `SHP-${shortId}`;
       
       console.log('Creating shipment with fields:', JSON.stringify(fields));
       
