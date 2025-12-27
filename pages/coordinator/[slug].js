@@ -1172,7 +1172,7 @@ export default function CoordinatorDashboard() {
       console.error('Add package error:', err);
       alert('❌ Greška pri kreiranju paketa');
     }
-  }};
+  };
 
   // Update shipment status
   const handleUpdateStatus = async (shipmentId, newStatus) => {
