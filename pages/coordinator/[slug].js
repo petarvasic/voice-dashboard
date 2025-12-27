@@ -276,7 +276,9 @@ const StatusBadge = ({ status }) => {
 // Campaign Card
 const CampaignCard = ({ campaign, isExpanded, onToggle, onInfluencerClick }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const percent = (campaign.percentDelivered || 0) * 100;
+  // percentDelivered might come as decimal (0.54) or already as percent (54)
+  const rawPercent = campaign.percentDelivered || 0;
+  const percent = rawPercent > 1 ? rawPercent : rawPercent * 100;
   
   return (
     <div style={{ marginBottom: '8px' }}>
@@ -1020,7 +1022,8 @@ export default function CoordinatorDashboard() {
     if (statusFilter !== 'all') {
       filtered = filtered.filter(c => {
         const s = c.progressStatus?.toLowerCase() || '';
-        const p = (c.percentDelivered || 0) * 100;
+        const rawP = c.percentDelivered || 0;
+        const p = rawP > 1 ? rawP : rawP * 100;
         if (statusFilter === 'critical') return s.includes('dead') || s.includes('critical');
         if (statusFilter === 'behind') return s.includes('red') || s.includes('behind');
         if (statusFilter === 'ontrack') return s.includes('yellow');
@@ -1236,7 +1239,18 @@ export default function CoordinatorDashboard() {
         isOpen={showAddPackageModal}
         onClose={() => setShowAddPackageModal(false)}
         onSubmit={handleAddPackage}
-        campaigns={data?.months || []}
+        campaigns={(data?.months || []).filter(c => {
+          // Only show active campaigns (started and not ended)
+          if (!c.startDate) return false;
+          const now = new Date();
+          const start = new Date(c.startDate);
+          if (start > now) return false; // Not started yet
+          if (c.endDate) {
+            const end = new Date(c.endDate.split('/').reverse().join('-'));
+            if (end < new Date(now.getFullYear(), now.getMonth(), 1)) return false; // Ended
+          }
+          return true;
+        })}
       />
     </>
   );
