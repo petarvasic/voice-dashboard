@@ -276,10 +276,23 @@ const StatusBadge = ({ status }) => {
 // Campaign Card
 const CampaignCard = ({ campaign, isExpanded, onToggle, onInfluencerClick }) => {
   const [isHovered, setIsHovered] = useState(false);
-  // percentDelivered comes as decimal (e.g., 0.54 for 54%)
-  // If it's > 10, assume it's already a percentage (edge case protection)
+  // percentDelivered from Airtable can be:
+  // - Decimal format: 0.54 (meaning 54%)
+  // - Already percentage: 54 (meaning 54%)
+  // - Wrong percentage: 5400 (meaning 54% stored as 5400)
+  // Logic: if > 100, divide by 100; if <= 1 and > 0, multiply by 100; else use as-is
   const rawPercent = campaign.percentDelivered || 0;
-  const percent = rawPercent > 10 ? rawPercent : rawPercent * 100;
+  let percent;
+  if (rawPercent > 100) {
+    // Airtable stored as 5400 instead of 54 or 0.54
+    percent = rawPercent / 100;
+  } else if (rawPercent > 0 && rawPercent <= 1) {
+    // Decimal format (0.54 = 54%)
+    percent = rawPercent * 100;
+  } else {
+    // Already a proper percentage (54 = 54%)
+    percent = rawPercent;
+  }
   
   return (
     <div style={{ marginBottom: '8px' }}>
@@ -824,8 +837,9 @@ const AddPackageModal = ({ isOpen, onClose, onSubmit, campaigns = [] }) => {
           <select value={courier} onChange={(e) => setCourier(e.target.value)}
             style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '14px', outline: 'none' }}>
             <option value="Pošta">Pošta</option>
-            <option value="Preuzimanje u kancelariji">Preuzimanje u kancelariji</option>
+            <option value="Peuzimanje u knacelariji">Preuzimanje u kancelariji</option>
             <option value="Glovo/Wolt">Glovo/Wolt</option>
+            <option value="Kurir">Kurir</option>
           </select>
         </div>
         
