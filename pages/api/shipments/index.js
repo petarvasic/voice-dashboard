@@ -99,21 +99,38 @@ export default async function handler(req, res) {
       if (contractMonthId) fields['Contract Month'] = [contractMonthId];
       if (coordinatorId) fields['Coordinator'] = [coordinatorId];
       
-      // Items is a multi-select field - if provided as string, split by comma
+      // Items is a multi-select field with ONLY these valid options:
+      const validItems = ['2x majica M', '1x parfem', '1x kozmetika set', '3x sample proizvoda'];
+      
+      // Items field - only use if it matches valid options, otherwise put in notes
       if (items) {
-        // If items is a string like "2x majica M, 1x parfem", split into array
+        let itemsArray = [];
         if (typeof items === 'string') {
-          fields['Items'] = items.split(',').map(item => item.trim()).filter(Boolean);
+          itemsArray = items.split(',').map(item => item.trim()).filter(Boolean);
         } else if (Array.isArray(items)) {
-          fields['Items'] = items;
+          itemsArray = items;
         }
+        
+        // Filter to only valid options
+        const validItemsToSave = itemsArray.filter(item => validItems.includes(item));
+        if (validItemsToSave.length > 0) {
+          fields['Items'] = validItemsToSave;
+        }
+        
+        // If user entered custom text (not matching valid options), add to notes
+        const customItems = itemsArray.filter(item => !validItems.includes(item));
+        if (customItems.length > 0) {
+          const customItemsText = 'Sadržaj paketa: ' + customItems.join(', ');
+          fields['Notes'] = notes ? `${notes}\n${customItemsText}` : customItemsText;
+        } else if (notes) {
+          fields['Notes'] = notes;
+        }
+      } else if (notes) {
+        fields['Notes'] = notes;
       }
       
       // Courier is a single-select field
       if (courier) fields['Courier'] = courier;
-      
-      // Notes is a text field
-      if (notes) fields['Notes'] = notes;
       
       // Shipment Name is REQUIRED (Primary Key) - generate unique name
       const timestamp = Date.now();
