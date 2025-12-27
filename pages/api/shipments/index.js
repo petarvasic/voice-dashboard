@@ -89,19 +89,24 @@ export default async function handler(req, res) {
     }
     
     try {
-      const newRecord = await base('Shipments').create([
-        {
-          fields: {
-            'Influencer': [influencerId],
-            'Contract Month': [contractMonthId],
-            'Coordinator': coordinatorId ? [coordinatorId] : [],
-            'Status': 'Čeka slanje',
-            'Items': items || '',
-            'Courier': courier || '',
-            'Notes': notes || ''
-          }
-        }
-      ]);
+      // Build fields object - only include non-empty values
+      const fields = {
+        'Status': 'Čeka slanje'
+      };
+      
+      // Link fields must be arrays of record IDs
+      if (influencerId) fields['Influencer'] = [influencerId];
+      if (contractMonthId) fields['Contract Month'] = [contractMonthId];
+      if (coordinatorId) fields['Coordinator'] = [coordinatorId];
+      
+      // Text fields
+      if (items) fields['Items'] = items;
+      if (courier) fields['Courier'] = courier;
+      if (notes) fields['Notes'] = notes;
+      
+      console.log('Creating shipment with fields:', JSON.stringify(fields));
+      
+      const newRecord = await base('Shipments').create([{ fields }]);
       
       return res.status(201).json({
         success: true,
