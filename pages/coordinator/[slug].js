@@ -1087,9 +1087,18 @@ export default function CoordinatorDashboard() {
   }, [slug]);
 
   const fetchShipments = useCallback(async () => {
+    if (!data?.user) return; // Wait for user data
+    
     setShipmentsLoading(true);
     try {
-      const res = await fetch('/api/shipments');
+      // Send coordinatorId and role to filter shipments
+      // HOD sees all, coordinators see only their clients
+      const params = new URLSearchParams({
+        coordinatorId: data.user.id || '',
+        role: data.user.role || ''
+      });
+      
+      const res = await fetch(`/api/shipments?${params}`);
       if (res.ok) {
         const json = await res.json();
         setShipments(json.shipments || []);
@@ -1100,11 +1109,13 @@ export default function CoordinatorDashboard() {
     } finally {
       setShipmentsLoading(false);
     }
-  }, []);
+  }, [data?.user]);
 
   useEffect(() => {
-    fetchShipments();
-  }, [fetchShipments]);
+    if (data?.user) {
+      fetchShipments();
+    }
+  }, [data?.user, fetchShipments]);
 
   const handleAddPackage = async (packageData) => {
     try {
