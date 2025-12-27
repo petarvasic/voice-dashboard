@@ -569,17 +569,28 @@ const ClipModal = ({ clip, onClose }) => {
 };
 
 // Package Tracking Section - COLLAPSIBLE with Airtable integration
-const PackageSection = ({ shipments = [], summary = {}, onAddPackage, onUpdateStatus, isExpanded, onToggle, loading }) => {
+const PackageSection = ({ shipments = [], summary = {}, onAddPackage, onUpdateStatus, onDeleteShipment, isExpanded, onToggle, loading, campaigns = [] }) => {
   const waiting = summary.waiting || 0;
   const inTransit = summary.inTransit || 0;
   const delivered = summary.delivered || 0;
   const total = summary.total || 0;
   
+  // Group shipments by campaign
+  const shipmentsByCampaign = shipments.reduce((acc, shipment) => {
+    const campaignKey = shipment.contractMonthId || 'unknown';
+    const campaignName = shipment.contractMonthName || 'Bez kampanje';
+    if (!acc[campaignKey]) {
+      acc[campaignKey] = { name: campaignName, shipments: [] };
+    }
+    acc[campaignKey].shipments.push(shipment);
+    return acc;
+  }, {});
+  
   return (
     <div style={{ marginBottom: '20px' }}>
       {/* Toggle Button */}
       <button onClick={onToggle} style={{
-        width: '100%', padding: '14px 20px',
+        width: '100%', padding: '16px 24px',
         background: isExpanded ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.1))' : 'rgba(255,255,255,0.03)',
         border: isExpanded ? '1px solid rgba(139, 92, 246, 0.4)' : '1px solid rgba(255,255,255,0.08)',
         borderRadius: isExpanded ? '16px 16px 0 0' : '16px',
@@ -587,74 +598,119 @@ const PackageSection = ({ shipments = [], summary = {}, onAddPackage, onUpdateSt
         display: 'flex', alignItems: 'center', justifyContent: 'space-between'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ fontSize: '20px' }}>📦</span>
-          <span style={{ fontSize: '15px', fontWeight: '700' }}>Praćenje paketa</span>
+          <span style={{ fontSize: '24px' }}>📦</span>
+          <span style={{ fontSize: '17px', fontWeight: '700' }}>Praćenje paketa</span>
           {total > 0 && (
-            <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: 'rgba(139, 92, 246, 0.3)', color: '#a78bfa' }}>
+            <span style={{ fontSize: '13px', padding: '4px 12px', borderRadius: '20px', background: 'rgba(139, 92, 246, 0.3)', color: '#a78bfa', fontWeight: '700' }}>
               {total}
             </span>
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {!isExpanded && total > 0 && (
-            <div style={{ display: 'flex', gap: '12px', fontSize: '12px' }}>
+            <div style={{ display: 'flex', gap: '16px', fontSize: '14px', fontWeight: '600' }}>
               <span style={{ color: '#f97316' }}>⏳ {waiting}</span>
               <span style={{ color: '#3b82f6' }}>🚚 {inTransit}</span>
               <span style={{ color: '#22c55e' }}>✅ {delivered}</span>
             </div>
           )}
-          {loading && <span style={{ fontSize: '12px', color: '#8b5cf6' }}>⟳</span>}
-          <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', transition: 'transform 0.3s', transform: isExpanded ? 'rotate(180deg)' : 'none' }}>▼</span>
+          {loading && <span style={{ fontSize: '14px', color: '#8b5cf6' }}>⟳</span>}
+          <span style={{ fontSize: '16px', color: 'rgba(255,255,255,0.4)', transition: 'transform 0.3s', transform: isExpanded ? 'rotate(180deg)' : 'none' }}>▼</span>
         </div>
       </button>
       
       {/* Expanded Content */}
       {isExpanded && (
         <div className="glass" style={{
-          borderRadius: '0 0 16px 16px', padding: '20px',
+          borderRadius: '0 0 16px 16px', padding: '24px',
           border: '1px solid rgba(139, 92, 246, 0.4)', borderTop: 'none',
           animation: 'fadeIn 0.3s ease'
         }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px' }}>
-            <div style={{ padding: '14px', background: 'rgba(249, 115, 22, 0.1)', borderRadius: '12px', border: '1px solid rgba(249, 115, 22, 0.3)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <span style={{ fontSize: '16px' }}>⏳</span>
-                <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)', fontWeight: '600' }}>ČEKA SLANJE</span>
+          {/* Summary Stats */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
+            <div style={{ padding: '18px', background: 'rgba(249, 115, 22, 0.1)', borderRadius: '14px', border: '1px solid rgba(249, 115, 22, 0.3)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                <span style={{ fontSize: '20px' }}>⏳</span>
+                <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', fontWeight: '700', letterSpacing: '0.5px' }}>ČEKA SLANJE</span>
               </div>
-              <p style={{ fontSize: '28px', fontWeight: '800', margin: 0, color: '#f97316' }}>{waiting}</p>
+              <p style={{ fontSize: '36px', fontWeight: '800', margin: 0, color: '#f97316' }}>{waiting}</p>
             </div>
             
-            <div style={{ padding: '14px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <span style={{ fontSize: '16px' }}>🚚</span>
-                <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)', fontWeight: '600' }}>U DOSTAVI</span>
+            <div style={{ padding: '18px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '14px', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                <span style={{ fontSize: '20px' }}>🚚</span>
+                <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', fontWeight: '700', letterSpacing: '0.5px' }}>U DOSTAVI</span>
               </div>
-              <p style={{ fontSize: '28px', fontWeight: '800', margin: 0, color: '#3b82f6' }}>{inTransit}</p>
+              <p style={{ fontSize: '36px', fontWeight: '800', margin: 0, color: '#3b82f6' }}>{inTransit}</p>
             </div>
             
-            <div style={{ padding: '14px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '12px', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <span style={{ fontSize: '16px' }}>✅</span>
-                <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)', fontWeight: '600' }}>DOSTAVLJENO</span>
+            <div style={{ padding: '18px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '14px', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                <span style={{ fontSize: '20px' }}>✅</span>
+                <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', fontWeight: '700', letterSpacing: '0.5px' }}>DOSTAVLJENO</span>
               </div>
-              <p style={{ fontSize: '28px', fontWeight: '800', margin: 0, color: '#22c55e' }}>{delivered}</p>
+              <p style={{ fontSize: '36px', fontWeight: '800', margin: 0, color: '#22c55e' }}>{delivered}</p>
             </div>
           </div>
           
-          {/* Shipment List */}
-          {shipments.length > 0 && (
-            <div style={{ marginBottom: '16px', maxHeight: '300px', overflowY: 'auto' }}>
-              {shipments.filter(s => s.status !== 'Dostavljeno').map((shipment) => (
-                <ShipmentRow key={shipment.id} shipment={shipment} onUpdateStatus={onUpdateStatus} />
+          {/* Shipments grouped by campaign */}
+          {Object.keys(shipmentsByCampaign).length > 0 ? (
+            <div style={{ marginBottom: '20px' }}>
+              {Object.entries(shipmentsByCampaign).map(([campaignId, { name, shipments: campaignShipments }]) => (
+                <div key={campaignId} style={{ marginBottom: '20px' }}>
+                  {/* Campaign Header */}
+                  <div style={{ 
+                    padding: '12px 16px', 
+                    background: 'rgba(139, 92, 246, 0.1)', 
+                    borderRadius: '10px', 
+                    marginBottom: '12px',
+                    border: '1px solid rgba(139, 92, 246, 0.2)'
+                  }}>
+                    <span style={{ fontSize: '14px', fontWeight: '700', color: '#a78bfa' }}>
+                      📋 {name}
+                    </span>
+                    <span style={{ 
+                      fontSize: '12px', 
+                      color: 'rgba(255,255,255,0.5)', 
+                      marginLeft: '12px' 
+                    }}>
+                      ({campaignShipments.length} {campaignShipments.length === 1 ? 'paket' : 'paketa'})
+                    </span>
+                  </div>
+                  
+                  {/* Shipments for this campaign */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {campaignShipments.map((shipment) => (
+                      <ShipmentCard 
+                        key={shipment.id} 
+                        shipment={shipment} 
+                        onUpdateStatus={onUpdateStatus}
+                        onDelete={onDeleteShipment}
+                      />
+                    ))}
+                  </div>
+                </div>
               ))}
+            </div>
+          ) : (
+            <div style={{ 
+              padding: '40px', 
+              textAlign: 'center', 
+              color: 'rgba(255,255,255,0.4)',
+              background: 'rgba(255,255,255,0.02)',
+              borderRadius: '12px',
+              marginBottom: '20px'
+            }}>
+              <span style={{ fontSize: '40px', display: 'block', marginBottom: '12px' }}>📭</span>
+              <p style={{ margin: 0, fontSize: '15px' }}>Nema paketa za prikaz</p>
             </div>
           )}
           
           <button onClick={onAddPackage} style={{
-            width: '100%', padding: '12px',
+            width: '100%', padding: '16px',
             background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
-            border: 'none', borderRadius: '10px', color: '#fff',
-            fontSize: '13px', fontWeight: '600', cursor: 'pointer',
+            border: 'none', borderRadius: '12px', color: '#fff',
+            fontSize: '15px', fontWeight: '700', cursor: 'pointer',
             transition: 'transform 0.2s, box-shadow 0.2s'
           }}
           onMouseEnter={(e) => { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 10px 30px rgba(139, 92, 246, 0.4)'; }}
@@ -667,84 +723,246 @@ const PackageSection = ({ shipments = [], summary = {}, onAddPackage, onUpdateSt
   );
 };
 
-// Shipment Row Component
-const ShipmentRow = ({ shipment, onUpdateStatus }) => {
+// Shipment Card Component - redesigned with better info display
+const ShipmentCard = ({ shipment, onUpdateStatus, onDelete }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   
   const statusColors = {
-    'Čeka slanje': { bg: 'rgba(249, 115, 22, 0.15)', color: '#f97316', icon: '⏳' },
-    'U dostavi': { bg: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', icon: '🚚' },
-    'Dostavljeno': { bg: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', icon: '✅' }
+    'Čeka slanje': { bg: 'rgba(249, 115, 22, 0.15)', color: '#f97316', icon: '⏳', border: 'rgba(249, 115, 22, 0.3)' },
+    'U dostavi': { bg: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', icon: '🚚', border: 'rgba(59, 130, 246, 0.3)' },
+    'Dostavljeno': { bg: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', icon: '✅', border: 'rgba(34, 197, 94, 0.3)' }
   };
   
-  const nextStatus = {
-    'Čeka slanje': 'U dostavi',
-    'U dostavi': 'Dostavljeno',
-    'Dostavljeno': null
-  };
+  const statusFlow = ['Čeka slanje', 'U dostavi', 'Dostavljeno'];
+  const currentIndex = statusFlow.indexOf(shipment.status);
+  const canGoBack = currentIndex > 0;
+  const canGoForward = currentIndex < statusFlow.length - 1;
+  const prevStatus = canGoBack ? statusFlow[currentIndex - 1] : null;
+  const nextStatus = canGoForward ? statusFlow[currentIndex + 1] : null;
   
   const statusStyle = statusColors[shipment.status] || statusColors['Čeka slanje'];
-  const canProgress = nextStatus[shipment.status];
+  
+  // Extract client name from contractMonthName (format: "ClientName – Month Year")
+  const clientName = shipment.contractMonthName?.split(' – ')[0] || 'Nepoznat klijent';
   
   return (
     <div 
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseLeave={() => { setIsHovered(false); setShowConfirmDelete(false); }}
       style={{
-        display: 'flex', alignItems: 'center', gap: '12px',
-        padding: '12px', marginBottom: '8px',
-        background: isHovered ? 'rgba(139, 92, 246, 0.1)' : 'rgba(255,255,255,0.02)',
-        borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)',
+        padding: '16px 20px',
+        background: isHovered ? 'rgba(139, 92, 246, 0.08)' : 'rgba(255,255,255,0.03)',
+        borderRadius: '14px', 
+        border: `1px solid ${isHovered ? 'rgba(139, 92, 246, 0.3)' : 'rgba(255,255,255,0.08)'}`,
         transition: 'all 0.2s'
       }}
     >
-      <div style={{
-        width: '40px', height: '40px', borderRadius: '10px',
-        background: statusStyle.bg, display: 'flex',
-        alignItems: 'center', justifyContent: 'center', fontSize: '18px'
-      }}>
-        {statusStyle.icon}
+      {/* Top Row: Status icon, Info, Status badge */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '14px' }}>
+        {/* Status Icon */}
+        <div style={{
+          width: '50px', height: '50px', borderRadius: '12px',
+          background: statusStyle.bg, 
+          border: `1px solid ${statusStyle.border}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', 
+          fontSize: '24px',
+          flexShrink: 0
+        }}>
+          {statusStyle.icon}
+        </div>
+        
+        {/* Info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Influencer Name - Main */}
+          <p style={{ 
+            fontSize: '16px', 
+            fontWeight: '700', 
+            margin: 0, 
+            color: '#fff',
+            marginBottom: '4px'
+          }}>
+            {shipment.influencerName || 'Nepoznat influencer'}
+          </p>
+          
+          {/* Client */}
+          <p style={{ 
+            fontSize: '13px', 
+            color: 'rgba(255,255,255,0.6)', 
+            margin: '0 0 6px 0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}>
+            <span style={{ color: '#a78bfa' }}>🏢</span> {clientName}
+          </p>
+          
+          {/* Package contents */}
+          {(shipment.items || shipment.notes) && (
+            <p style={{ 
+              fontSize: '12px', 
+              color: 'rgba(255,255,255,0.5)', 
+              margin: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <span>📦</span> 
+              {Array.isArray(shipment.items) ? shipment.items.join(', ') : shipment.items || shipment.notes || ''}
+            </p>
+          )}
+          
+          {/* Tracking number if exists */}
+          {shipment.trackingNumber && (
+            <p style={{ 
+              fontSize: '11px', 
+              color: 'rgba(255,255,255,0.4)', 
+              margin: '6px 0 0',
+              fontFamily: 'monospace',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <span>🔢</span> {shipment.trackingNumber}
+            </p>
+          )}
+        </div>
+        
+        {/* Status Badge */}
+        <div style={{
+          padding: '8px 14px',
+          borderRadius: '10px',
+          background: statusStyle.bg,
+          border: `1px solid ${statusStyle.border}`,
+          color: statusStyle.color,
+          fontSize: '13px',
+          fontWeight: '700',
+          whiteSpace: 'nowrap'
+        }}>
+          {shipment.status}
+        </div>
       </div>
       
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: '13px', fontWeight: '600', margin: 0, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {shipment.influencerName || 'N/A'}
-        </p>
-        <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', margin: '2px 0 0' }}>
-          {shipment.contractMonthName || shipment.items || 'Paket'}
-        </p>
-      </div>
-      
-      {shipment.trackingNumber && (
-        <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }}>
-          {shipment.trackingNumber}
-        </span>
-      )}
-      
-      <span style={{
-        fontSize: '10px', fontWeight: '600', padding: '4px 10px',
-        borderRadius: '6px', background: statusStyle.bg, color: statusStyle.color
+      {/* Bottom Row: Action Buttons */}
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '10px',
+        paddingTop: '14px',
+        borderTop: '1px solid rgba(255,255,255,0.06)'
       }}>
-        {shipment.status}
-      </span>
-      
-      {canProgress && (
-        <button
-          onClick={() => onUpdateStatus(shipment.id, nextStatus[shipment.status])}
-          style={{
-            padding: '6px 12px', borderRadius: '8px',
-            background: 'rgba(139, 92, 246, 0.2)',
-            border: '1px solid rgba(139, 92, 246, 0.4)',
-            color: '#a78bfa', fontSize: '11px', fontWeight: '600',
-            cursor: 'pointer', transition: 'all 0.2s',
-            opacity: isHovered ? 1 : 0
-          }}
-        >
-          → {nextStatus[shipment.status]}
-        </button>
-      )}
+        {/* Back Button */}
+        {canGoBack && (
+          <button
+            onClick={() => onUpdateStatus(shipment.id, prevStatus)}
+            style={{
+              padding: '10px 16px',
+              borderRadius: '10px',
+              background: 'rgba(249, 115, 22, 0.15)',
+              border: '1px solid rgba(249, 115, 22, 0.3)',
+              color: '#f97316',
+              fontSize: '13px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            ← Nazad na "{prevStatus}"
+          </button>
+        )}
+        
+        {/* Forward Button */}
+        {canGoForward && (
+          <button
+            onClick={() => onUpdateStatus(shipment.id, nextStatus)}
+            style={{
+              padding: '10px 16px',
+              borderRadius: '10px',
+              background: 'rgba(34, 197, 94, 0.15)',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              color: '#22c55e',
+              fontSize: '13px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              marginLeft: canGoBack ? '0' : 'auto'
+            }}
+          >
+            Dalje → "{nextStatus}"
+          </button>
+        )}
+        
+        {/* Delete Button - only show for delivered */}
+        {shipment.status === 'Dostavljeno' && (
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {showConfirmDelete ? (
+              <>
+                <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Obrisati?</span>
+                <button
+                  onClick={() => onDelete && onDelete(shipment.id)}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    background: 'rgba(239, 68, 68, 0.2)',
+                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                    color: '#ef4444',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ✓ Da
+                </button>
+                <button
+                  onClick={() => setShowConfirmDelete(false)}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: 'rgba(255,255,255,0.6)',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ✗ Ne
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setShowConfirmDelete(true)}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '8px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'rgba(255,255,255,0.4)',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                🗑️ Ukloni
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
+};
+
+// Old ShipmentRow kept for compatibility but not used
+const ShipmentRow = ({ shipment, onUpdateStatus }) => {
+  return <ShipmentCard shipment={shipment} onUpdateStatus={onUpdateStatus} />;
 };
 
 // Add Package Modal
@@ -954,7 +1172,7 @@ export default function CoordinatorDashboard() {
       console.error('Add package error:', err);
       alert('❌ Greška pri kreiranju paketa');
     }
-  };
+  }};
 
   // Update shipment status
   const handleUpdateStatus = async (shipmentId, newStatus) => {
@@ -972,6 +1190,25 @@ export default function CoordinatorDashboard() {
       }
     } catch (err) {
       console.error('Update status error:', err);
+    }
+  };
+
+  // Delete shipment
+  const handleDeleteShipment = async (shipmentId) => {
+    try {
+      const res = await fetch('/api/shipments', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shipmentId })
+      });
+      
+      if (res.ok) {
+        fetchShipments();
+      } else {
+        alert('❌ Greška pri brisanju paketa');
+      }
+    } catch (err) {
+      console.error('Delete shipment error:', err);
     }
   };
 
@@ -1125,6 +1362,7 @@ export default function CoordinatorDashboard() {
           <PackageSection shipments={shipments} summary={shipmentsSummary} 
                           onAddPackage={() => setShowAddPackageModal(true)} 
                           onUpdateStatus={handleUpdateStatus}
+                          onDeleteShipment={handleDeleteShipment}
                           isExpanded={packagesExpanded} onToggle={() => setPackagesExpanded(!packagesExpanded)}
                           loading={shipmentsLoading} />
 
