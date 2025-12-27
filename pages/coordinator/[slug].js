@@ -276,23 +276,12 @@ const StatusBadge = ({ status }) => {
 // Campaign Card
 const CampaignCard = ({ campaign, isExpanded, onToggle, onInfluencerClick }) => {
   const [isHovered, setIsHovered] = useState(false);
-  // percentDelivered from Airtable can be:
-  // - Decimal format: 0.54 (meaning 54%)
-  // - Already percentage: 54 (meaning 54%)
-  // - Wrong percentage: 5400 (meaning 54% stored as 5400)
-  // Logic: if > 100, divide by 100; if <= 1 and > 0, multiply by 100; else use as-is
+  // percentDelivered from Airtable '%Delivered 2' field:
+  // - Returns decimal: 0.54 means 54%
+  // - Returns null/0 when campaign has 0 views (BLANK in Airtable)
   const rawPercent = campaign.percentDelivered || 0;
-  let percent;
-  if (rawPercent > 100) {
-    // Airtable stored as 5400 instead of 54 or 0.54
-    percent = rawPercent / 100;
-  } else if (rawPercent > 0 && rawPercent <= 1) {
-    // Decimal format (0.54 = 54%)
-    percent = rawPercent * 100;
-  } else {
-    // Already a proper percentage (54 = 54%)
-    percent = rawPercent;
-  }
+  // Convert decimal to percentage (0.54 -> 54)
+  const percent = rawPercent * 100;
   
   return (
     <div style={{ marginBottom: '8px' }}>
