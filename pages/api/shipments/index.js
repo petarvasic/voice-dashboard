@@ -42,24 +42,58 @@ export default async function handler(req, res) {
         .select(selectOptions)
         .all();
       
-      const shipments = records.map(record => ({
-        id: record.id,
-        name: record.fields['Shipment Name'] || record.fields['Name'] || '',
-        influencerId: record.fields['Influencer']?.[0] || null,
-        influencerName: record.fields['Influencer Name'] || record.fields['Influencer (from Influencer)']?.[0] || '',
-        contractMonthId: record.fields['Contract Month']?.[0] || null,
-        contractMonthName: record.fields['Contract Month Name'] || record.fields['Month (from Contract Month)']?.[0] || '',
-        coordinatorId: record.fields['Coordinator']?.[0] || null,
-        coordinatorName: record.fields['Coordinator Name'] || record.fields['Name (from Coordinator)']?.[0] || '',
-        status: record.fields['Status'] || 'Čeka slanje',
-        items: record.fields['Items'] || [],
-        trackingNumber: record.fields['Tracking Number'] || '',
-        courier: record.fields['Courier'] || '',
-        sentDate: record.fields['Sent Date'] || null,
-        deliveredDate: record.fields['Delivered Date'] || null,
-        notes: record.fields['Notes'] || '',
-        createdAt: record.fields['Created'] || null
-      }));
+      // Debug: log first record to see field names
+      if (records.length > 0) {
+        console.log('Shipment fields available:', Object.keys(records[0].fields));
+        console.log('First record fields:', JSON.stringify(records[0].fields, null, 2));
+      }
+      
+      const shipments = records.map(record => {
+        const fields = record.fields;
+        
+        // Try multiple possible field names for influencer name
+        const influencerName = 
+          fields['Influencer Name'] ||                           // Direct field
+          fields['Name (from Influencer)']?.[0] ||              // Lookup array
+          fields['Influencer Name (from Influencer)']?.[0] ||   // Another lookup format
+          fields['Influencer (from Influencer)']?.[0] ||        // Yet another format
+          '';
+        
+        // Try multiple possible field names for contract month / campaign name
+        const contractMonthName = 
+          fields['Contract Month Name'] ||                       // Direct field
+          fields['Month (from Contract Month)']?.[0] ||         // Lookup array
+          fields['Name (from Contract Month)']?.[0] ||          // Another lookup
+          fields['Month']?.[0] ||                               // Simple lookup
+          fields['Contract Month Name (from Contract Month)']?.[0] ||
+          '';
+        
+        // Try to get coordinator name
+        const coordinatorName = 
+          fields['Coordinator Name'] ||
+          fields['Name (from Coordinator)']?.[0] ||
+          fields['Coordinator (from Coordinator)']?.[0] ||
+          '';
+        
+        return {
+          id: record.id,
+          name: fields['Shipment Name'] || fields['Name'] || '',
+          influencerId: fields['Influencer']?.[0] || null,
+          influencerName: influencerName,
+          contractMonthId: fields['Contract Month']?.[0] || null,
+          contractMonthName: contractMonthName,
+          coordinatorId: fields['Coordinator']?.[0] || null,
+          coordinatorName: coordinatorName,
+          status: fields['Status'] || 'Čeka slanje',
+          items: fields['Items'] || [],
+          trackingNumber: fields['Tracking Number'] || '',
+          courier: fields['Courier'] || '',
+          sentDate: fields['Sent Date'] || null,
+          deliveredDate: fields['Delivered Date'] || null,
+          notes: fields['Notes'] || '',
+          createdAt: fields['Created'] || null
+        };
+      });
       
       // Group by status for summary
       const summary = {
