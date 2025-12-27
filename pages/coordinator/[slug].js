@@ -1,5 +1,5 @@
-// pages/coordinator/[slug].js - Coordinator Dashboard v11
-// Features: Flip cards, Package tracking with status filter, compact cards
+// pages/coordinator/[slug].js - Coordinator Dashboard v10
+// Features: Flip cards, Package tracking with Airtable, Fixed clips display
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -44,8 +44,8 @@ const getDaysAgo = (dateStr) => {
     const diff = Math.floor((now - date) / (1000 * 60 * 60 * 24));
     if (diff === 0) return 'Danas';
     if (diff === 1) return 'Juče';
-    if (diff < 7) return 'Pre ' + diff + ' dana';
-    if (diff < 30) return 'Pre ' + Math.floor(diff / 7) + ' ned.';
+    if (diff < 7) return `Pre ${diff} dana`;
+    if (diff < 30) return `Pre ${Math.floor(diff / 7)} ned.`;
     return formatShortDate(dateStr);
   } catch {
     return null;
@@ -57,6 +57,7 @@ const GlobalStyles = () => (
   <style>{`
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
     @keyframes glow { 0%, 100% { box-shadow: 0 0 4px #22c55e; } 50% { box-shadow: 0 0 20px #22c55e; } }
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
     @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
@@ -72,6 +73,7 @@ const GlobalStyles = () => (
 
 // ============ COMPONENTS ============
 
+// Platform Icon SVG
 const PlatformIcon = ({ platform, size = 24 }) => {
   if (platform === 'Tik Tok') {
     return (
@@ -90,6 +92,7 @@ const PlatformIcon = ({ platform, size = 24 }) => {
   return <span style={{ fontSize: size * 0.8 }}>🎬</span>;
 };
 
+// Live Indicator
 const LiveIndicator = () => (
   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite, glow 2s infinite' }} />
@@ -97,13 +100,15 @@ const LiveIndicator = () => (
   </div>
 );
 
+// Glass Card
 const GlassCard = ({ children, style = {}, className = '' }) => (
-  <div className={'glass ' + className} style={{ borderRadius: '20px', padding: '20px', ...style }}>
+  <div className={`glass ${className}`} style={{ borderRadius: '20px', padding: '20px', ...style }}>
     {children}
   </div>
 );
 
-const FlipStatCard = ({ icon, label, value, subValue, gradient = 'purple', items = [], size = 'normal' }) => {
+// Flip Stat Card - ALL stats can flip!
+const FlipStatCard = ({ icon, label, value, subValue, gradient = 'purple', items = [], itemType = 'clip', size = 'normal' }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const isLarge = size === 'large';
@@ -132,15 +137,16 @@ const FlipStatCard = ({ icon, label, value, subValue, gradient = 'purple', items
              transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
              cursor: canFlip ? 'pointer' : 'default'
            }}>
+        {/* Front */}
         <div className="glass" style={{
           position: 'absolute', width: '100%', height: '100%',
           backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
           borderRadius: '20px', padding: '16px', background: g.bg,
-          border: isHovered ? '1px solid ' + g.border : '1px solid rgba(255,255,255,0.08)',
+          border: isHovered ? `1px solid ${g.border}` : '1px solid rgba(255,255,255,0.08)',
           display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
           transition: 'all 0.3s ease',
           transform: isHovered && !isFlipped ? 'scale(1.02)' : 'scale(1)',
-          boxShadow: isHovered ? '0 10px 40px ' + g.border + '40' : 'none'
+          boxShadow: isHovered ? `0 10px 40px ${g.border}40` : 'none'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -162,11 +168,12 @@ const FlipStatCard = ({ icon, label, value, subValue, gradient = 'purple', items
           )}
         </div>
         
+        {/* Back */}
         <div className="glass" style={{
           position: 'absolute', width: '100%', height: '100%',
           backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
           transform: 'rotateY(180deg)', borderRadius: '20px', padding: '12px',
-          background: 'rgba(15, 15, 30, 0.95)', border: '1px solid ' + g.border,
+          background: 'rgba(15, 15, 30, 0.95)', border: `1px solid ${g.border}`,
           overflow: 'hidden', display: 'flex', flexDirection: 'column'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -179,8 +186,11 @@ const FlipStatCard = ({ icon, label, value, subValue, gradient = 'purple', items
                  onClick={(e) => e.stopPropagation()}
                  style={{
                    display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px',
-                   background: 'rgba(255,255,255,0.05)', borderRadius: '8px', textDecoration: 'none'
-                 }}>
+                   background: 'rgba(255,255,255,0.05)', borderRadius: '8px', textDecoration: 'none',
+                   transition: 'background 0.2s'
+                 }}
+                 onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(139, 92, 246, 0.2)'}
+                 onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
                 <div style={{
                   width: '24px', height: '24px', borderRadius: '6px', flexShrink: 0,
                   background: item.platform === 'Tik Tok' ? 'linear-gradient(135deg, #010101, #69C9D0)' : 'linear-gradient(45deg, #f09433, #dc2743)',
@@ -200,7 +210,14 @@ const FlipStatCard = ({ icon, label, value, subValue, gradient = 'purple', items
               </a>
             ))}
             {items.length === 0 && (
-              <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '16px' }}>Nema podataka</p>
+              <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '16px' }}>
+                Nema podataka
+              </p>
+            )}
+            {items.length > 5 && (
+              <p style={{ fontSize: '9px', color: 'rgba(255,255,255,0.4)', textAlign: 'center', margin: '4px 0 0' }}>
+                +{items.length - 5} više
+              </p>
             )}
           </div>
         </div>
@@ -209,6 +226,7 @@ const FlipStatCard = ({ icon, label, value, subValue, gradient = 'purple', items
   );
 };
 
+// Progress Bar
 const ProgressBar = ({ percent, showLabel = true, size = 'normal' }) => {
   const height = size === 'small' ? '6px' : '8px';
   const actualPercent = Math.min(Math.max(percent || 0, 0), 100);
@@ -222,7 +240,7 @@ const ProgressBar = ({ percent, showLabel = true, size = 'normal' }) => {
   return (
     <div style={{ width: '100%' }}>
       <div style={{ height, background: 'rgba(255,255,255,0.08)', borderRadius: '100px', overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: actualPercent + '%', background: getGradient(), borderRadius: '100px', transition: 'width 0.8s ease' }} />
+        <div style={{ height: '100%', width: `${actualPercent}%`, background: getGradient(), borderRadius: '100px', transition: 'width 0.8s ease' }} />
       </div>
       {showLabel && (
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
@@ -235,9 +253,10 @@ const ProgressBar = ({ percent, showLabel = true, size = 'normal' }) => {
   );
 };
 
+// Status Badge
 const StatusBadge = ({ status }) => {
   const getStyle = () => {
-    const s = (status || '').toLowerCase();
+    const s = status?.toLowerCase() || '';
     if (s.includes('overgreen') || s.includes('dominating')) return { bg: 'rgba(34, 197, 94, 0.25)', color: '#22c55e', icon: '💚' };
     if (s.includes('green') || s.includes('ahead')) return { bg: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', icon: '🟢' };
     if (s.includes('yellow')) return { bg: 'rgba(234, 179, 8, 0.2)', color: '#fbbf24', icon: '🟡' };
@@ -246,14 +265,15 @@ const StatusBadge = ({ status }) => {
     if (s.includes('dead') || s.includes('critical')) return { bg: 'rgba(239, 68, 68, 0.3)', color: '#ef4444', icon: '💀' };
     return { bg: 'rgba(156, 163, 175, 0.2)', color: '#9ca3af', icon: '⚪' };
   };
-  const st = getStyle();
+  const style = getStyle();
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '600', background: st.bg, color: st.color }}>
-      <span>{st.icon}</span>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '600', background: style.bg, color: style.color }}>
+      <span>{style.icon}</span>
     </span>
   );
 };
 
+// Campaign Card
 const CampaignCard = ({ campaign, isExpanded, onToggle, onInfluencerClick }) => {
   const [isHovered, setIsHovered] = useState(false);
   const rawPercent = campaign.percentDelivered || 0;
@@ -276,7 +296,7 @@ const CampaignCard = ({ campaign, isExpanded, onToggle, onInfluencerClick }) => 
               background: percent >= 100 ? 'linear-gradient(135deg, #22c55e, #10b981)' : 'linear-gradient(135deg, #8b5cf6, #6366f1)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '700', color: '#fff', flexShrink: 0
             }}>
-              {percent >= 100 ? '✓' : (campaign.month ? campaign.month.charAt(0) : '?')}
+              {percent >= 100 ? '✓' : campaign.month?.charAt(0) || '?'}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <h3 style={{ fontSize: '14px', fontWeight: '700', margin: 0, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -284,7 +304,7 @@ const CampaignCard = ({ campaign, isExpanded, onToggle, onInfluencerClick }) => 
               </h3>
               <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '2px 0 0' }}>
                 {formatNumber(campaign.totalViews)} / {formatNumber(campaign.campaignGoal)} • {campaign.publishedClips || 0} klipova
-                {campaign.totalInfluencers > 0 && (' • ' + campaign.totalInfluencers + ' inf.')}
+                {campaign.totalInfluencers > 0 && ` • ${campaign.totalInfluencers} inf.`}
               </p>
             </div>
           </div>
@@ -332,11 +352,11 @@ const CampaignCard = ({ campaign, isExpanded, onToggle, onInfluencerClick }) => 
           <h4 style={{ fontSize: '13px', fontWeight: '700', margin: '0 0 12px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
             👥 Influenseri
             <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: 'rgba(139, 92, 246, 0.2)', color: '#a78bfa' }}>
-              {campaign.influencers ? campaign.influencers.length : 0}
+              {campaign.influencers?.length || 0}
             </span>
           </h4>
           
-          {campaign.influencers && campaign.influencers.length > 0 ? (
+          {campaign.influencers?.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {campaign.influencers.map((inf, i) => (
                 <div key={inf.id || i} onClick={() => onInfluencerClick(inf, campaign)}
@@ -349,7 +369,7 @@ const CampaignCard = ({ campaign, isExpanded, onToggle, onInfluencerClick }) => 
                      onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.transform = 'none'; }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #ec4899, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '700', color: '#fff' }}>
-                      {inf.name ? inf.name.charAt(0).toUpperCase() : '?'}
+                      {inf.name?.charAt(0)?.toUpperCase() || '?'}
                     </div>
                     <span style={{ fontSize: '13px', fontWeight: '600', color: '#fff' }}>{inf.name}</span>
                   </div>
@@ -370,6 +390,7 @@ const CampaignCard = ({ campaign, isExpanded, onToggle, onInfluencerClick }) => 
   );
 };
 
+// Clip Card
 const ClipCard = ({ clip, onClick }) => {
   const [isHovered, setIsHovered] = useState(false);
   const hasLink = clip.link && clip.link.length > 0;
@@ -409,6 +430,7 @@ const ClipCard = ({ clip, onClick }) => {
   );
 };
 
+// Influencer Drawer
 const InfluencerDrawer = ({ influencer, campaign, onClose }) => {
   const [selectedClip, setSelectedClip] = useState(null);
   if (!influencer) return null;
@@ -421,11 +443,11 @@ const InfluencerDrawer = ({ influencer, campaign, onClose }) => {
       <div className="glass-strong" style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '460px', maxWidth: '90vw', zIndex: 101, animation: 'slideInRight 0.3s', display: 'flex', flexDirection: 'column', borderLeft: '1px solid rgba(139, 92, 246, 0.3)' }}>
         <div style={{ padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '14px' }}>
           <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'linear-gradient(135deg, #ec4899, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '700', color: '#fff' }}>
-            {influencer.name ? influencer.name.charAt(0).toUpperCase() : '?'}
+            {influencer.name?.charAt(0)?.toUpperCase() || '?'}
           </div>
           <div style={{ flex: 1 }}>
             <h2 style={{ fontSize: '18px', fontWeight: '700', margin: 0, color: '#fff' }}>{influencer.name}</h2>
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '2px 0 0' }}>{campaign ? campaign.month : ''}</p>
+            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '2px 0 0' }}>{campaign?.month}</p>
           </div>
           <button onClick={onClose} style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', fontSize: '18px', cursor: 'pointer' }}>✕</button>
         </div>
@@ -464,11 +486,12 @@ const InfluencerDrawer = ({ influencer, campaign, onClose }) => {
   );
 };
 
+// Clip Modal
 const ClipModal = ({ clip, onClose }) => {
   if (!clip) return null;
   
-  const getTikTokEmbed = (url) => { const m = url ? url.match(/video\/(\d+)/) : null; return m ? 'https://www.tiktok.com/embed/v2/' + m[1] : null; };
-  const getInstagramEmbed = (url) => { const m = url ? url.match(/\/(p|reel|reels)\/([A-Za-z0-9_-]+)/) : null; return m ? 'https://www.instagram.com/p/' + m[2] + '/embed' : null; };
+  const getTikTokEmbed = (url) => { const m = url?.match(/video\/(\d+)/); return m ? `https://www.tiktok.com/embed/v2/${m[1]}` : null; };
+  const getInstagramEmbed = (url) => { const m = url?.match(/\/(p|reel|reels)\/([A-Za-z0-9_-]+)/); return m ? `https://www.instagram.com/p/${m[2]}/embed` : null; };
   const embedUrl = clip.platform === 'Tik Tok' ? getTikTokEmbed(clip.link) : clip.platform === 'Instagram' ? getInstagramEmbed(clip.link) : null;
   
   return (
@@ -540,8 +563,8 @@ const ClipModal = ({ clip, onClose }) => {
   );
 };
 
-// ============ PACKAGE SECTION - WITH STATUS FILTER ============
-const PackageSection = ({ shipments = [], summary = {}, onAddPackage, onUpdateStatus, onDeleteShipment, isExpanded, onToggle, loading }) => {
+// Package Tracking Section - COLLAPSIBLE with Airtable integration
+const PackageSection = ({ shipments = [], summary = {}, onAddPackage, onUpdateStatus, onDeleteShipment, isExpanded, onToggle, loading, campaigns = [] }) => {
   const [statusFilter, setStatusFilter] = useState(null);
   
   const waiting = summary.waiting || 0;
@@ -549,18 +572,23 @@ const PackageSection = ({ shipments = [], summary = {}, onAddPackage, onUpdateSt
   const delivered = summary.delivered || 0;
   const total = summary.total || 0;
   
+  // Filter shipments by status
   const filteredShipments = statusFilter 
-    ? shipments.filter(function(s) { return s.status === statusFilter; })
+    ? shipments.filter(s => s.status === statusFilter)
     : shipments;
   
-  const shipmentsByCampaign = filteredShipments.reduce(function(acc, shipment) {
-    const key = shipment.contractMonthId || 'unknown';
-    const name = shipment.contractMonthName || 'Bez kampanje';
-    if (!acc[key]) acc[key] = { name: name, shipments: [] };
-    acc[key].shipments.push(shipment);
+  // Group shipments by campaign
+  const shipmentsByCampaign = filteredShipments.reduce((acc, shipment) => {
+    const campaignKey = shipment.contractMonthId || 'unknown';
+    const campaignName = shipment.contractMonthName || 'Bez kampanje';
+    if (!acc[campaignKey]) {
+      acc[campaignKey] = { name: campaignName, shipments: [] };
+    }
+    acc[campaignKey].shipments.push(shipment);
     return acc;
   }, {});
   
+  // Status Card Component
   const StatusCard = ({ icon, label, count, color, filterValue }) => {
     const isActive = statusFilter === filterValue;
     return (
@@ -568,9 +596,9 @@ const PackageSection = ({ shipments = [], summary = {}, onAddPackage, onUpdateSt
         onClick={() => setStatusFilter(isActive ? null : filterValue)}
         style={{
           padding: '12px 16px',
-          background: isActive ? color + '30' : color + '15',
+          background: isActive ? `${color}30` : `${color}15`,
           borderRadius: '12px',
-          border: isActive ? '2px solid ' + color : '1px solid ' + color + '50',
+          border: isActive ? `2px solid ${color}` : `1px solid ${color}50`,
           cursor: 'pointer',
           transition: 'all 0.2s',
           flex: 1,
@@ -588,12 +616,13 @@ const PackageSection = ({ shipments = [], summary = {}, onAddPackage, onUpdateSt
   
   return (
     <div style={{ marginBottom: '20px' }}>
+      {/* Toggle Button */}
       <button onClick={onToggle} style={{
         width: '100%', padding: '14px 20px',
         background: isExpanded ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.1))' : 'rgba(255,255,255,0.03)',
         border: isExpanded ? '1px solid rgba(139, 92, 246, 0.4)' : '1px solid rgba(255,255,255,0.08)',
         borderRadius: isExpanded ? '14px 14px 0 0' : '14px',
-        color: '#fff', cursor: 'pointer', transition: 'all 0.3s',
+        color: '#fff', cursor: 'pointer', transition: 'all 0.3s ease',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -618,18 +647,21 @@ const PackageSection = ({ shipments = [], summary = {}, onAddPackage, onUpdateSt
         </div>
       </button>
       
+      {/* Expanded Content */}
       {isExpanded && (
         <div className="glass" style={{
           borderRadius: '0 0 14px 14px', padding: '20px',
           border: '1px solid rgba(139, 92, 246, 0.4)', borderTop: 'none',
-          animation: 'fadeIn 0.3s'
+          animation: 'fadeIn 0.3s ease'
         }}>
+          {/* Clickable Status Cards */}
           <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
             <StatusCard icon="⏳" label="ČEKA SLANJE" count={waiting} color="#f97316" filterValue="Čeka slanje" />
             <StatusCard icon="🚚" label="U DOSTAVI" count={inTransit} color="#3b82f6" filterValue="U dostavi" />
             <StatusCard icon="✅" label="DOSTAVLJENO" count={delivered} color="#22c55e" filterValue="Dostavljeno" />
           </div>
           
+          {/* Filter indicator */}
           {statusFilter && (
             <div style={{ 
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -649,33 +681,57 @@ const PackageSection = ({ shipments = [], summary = {}, onAddPackage, onUpdateSt
             </div>
           )}
           
+          {/* Shipments grouped by campaign */}
           {Object.keys(shipmentsByCampaign).length > 0 ? (
             <div style={{ marginBottom: '16px' }}>
-              {Object.entries(shipmentsByCampaign).map(function([id, data]) {
-                return (
-                  <div key={id} style={{ marginBottom: '16px' }}>
-                    <div style={{ 
-                      padding: '8px 12px', background: 'rgba(139, 92, 246, 0.1)', 
-                      borderRadius: '8px', marginBottom: '8px',
-                      border: '1px solid rgba(139, 92, 246, 0.2)'
+              {Object.entries(shipmentsByCampaign).map(([campaignId, { name, shipments: campaignShipments }]) => (
+                <div key={campaignId} style={{ marginBottom: '16px' }}>
+                  {/* Campaign Header */}
+                  <div style={{ 
+                    padding: '8px 12px', 
+                    background: 'rgba(139, 92, 246, 0.1)', 
+                    borderRadius: '8px', 
+                    marginBottom: '8px',
+                    border: '1px solid rgba(139, 92, 246, 0.2)'
+                  }}>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#a78bfa' }}>
+                      📋 {name}
+                    </span>
+                    <span style={{ 
+                      fontSize: '11px', 
+                      color: 'rgba(255,255,255,0.4)', 
+                      marginLeft: '8px' 
                     }}>
-                      <span style={{ fontSize: '13px', fontWeight: '600', color: '#a78bfa' }}>📋 {data.name}</span>
-                      <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginLeft: '8px' }}>({data.shipments.length})</span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {data.shipments.map(function(s) {
-                        return <ShipmentCard key={s.id} shipment={s} onUpdateStatus={onUpdateStatus} onDelete={onDeleteShipment} />;
-                      })}
-                    </div>
+                      ({campaignShipments.length})
+                    </span>
                   </div>
-                );
-              })}
+                  
+                  {/* Shipments for this campaign */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {campaignShipments.map((shipment) => (
+                      <ShipmentCard 
+                        key={shipment.id} 
+                        shipment={shipment} 
+                        onUpdateStatus={onUpdateStatus}
+                        onDelete={onDeleteShipment}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
-            <div style={{ padding: '30px', textAlign: 'center', color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', marginBottom: '16px' }}>
+            <div style={{ 
+              padding: '30px', 
+              textAlign: 'center', 
+              color: 'rgba(255,255,255,0.4)',
+              background: 'rgba(255,255,255,0.02)',
+              borderRadius: '10px',
+              marginBottom: '16px'
+            }}>
               <span style={{ fontSize: '32px', display: 'block', marginBottom: '8px' }}>📭</span>
               <p style={{ margin: 0, fontSize: '13px' }}>
-                {statusFilter ? 'Nema paketa sa statusom "' + statusFilter + '"' : 'Nema paketa'}
+                {statusFilter ? `Nema paketa sa statusom "${statusFilter}"` : 'Nema paketa za prikaz'}
               </p>
             </div>
           )}
@@ -684,8 +740,11 @@ const PackageSection = ({ shipments = [], summary = {}, onAddPackage, onUpdateSt
             width: '100%', padding: '12px',
             background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
             border: 'none', borderRadius: '10px', color: '#fff',
-            fontSize: '14px', fontWeight: '600', cursor: 'pointer'
-          }}>
+            fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+            transition: 'transform 0.2s, box-shadow 0.2s'
+          }}
+          onMouseEnter={(e) => { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 10px 30px rgba(139, 92, 246, 0.4)'; }}
+          onMouseLeave={(e) => { e.target.style.transform = 'none'; e.target.style.boxShadow = 'none'; }}>
             + Dodaj novi paket
           </button>
         </div>
@@ -694,49 +753,58 @@ const PackageSection = ({ shipments = [], summary = {}, onAddPackage, onUpdateSt
   );
 };
 
-// ============ SHIPMENT CARD - COMPACT ============
+// Shipment Card Component - Compact design
 const ShipmentCard = ({ shipment, onUpdateStatus, onDelete }) => {
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   
-  const colors = {
+  const statusColors = {
     'Čeka slanje': { bg: 'rgba(249, 115, 22, 0.12)', color: '#f97316', icon: '⏳', border: 'rgba(249, 115, 22, 0.25)' },
     'U dostavi': { bg: 'rgba(59, 130, 246, 0.12)', color: '#3b82f6', icon: '🚚', border: 'rgba(59, 130, 246, 0.25)' },
     'Dostavljeno': { bg: 'rgba(34, 197, 94, 0.12)', color: '#22c55e', icon: '✅', border: 'rgba(34, 197, 94, 0.25)' }
   };
   
-  const flow = ['Čeka slanje', 'U dostavi', 'Dostavljeno'];
-  const idx = flow.indexOf(shipment.status);
-  const canBack = idx > 0;
-  const canForward = idx < flow.length - 1;
-  const style = colors[shipment.status] || colors['Čeka slanje'];
+  const statusFlow = ['Čeka slanje', 'U dostavi', 'Dostavljeno'];
+  const currentIndex = statusFlow.indexOf(shipment.status);
+  const canGoBack = currentIndex > 0;
+  const canGoForward = currentIndex < statusFlow.length - 1;
+  const prevStatus = canGoBack ? statusFlow[currentIndex - 1] : null;
+  const nextStatus = canGoForward ? statusFlow[currentIndex + 1] : null;
   
-  const client = shipment.contractMonthName ? shipment.contractMonthName.split(' – ')[0] : '';
+  const statusStyle = statusColors[shipment.status] || statusColors['Čeka slanje'];
+  
+  // Extract client name from contractMonthName (format: "ClientName – Month Year")
+  const clientName = shipment.contractMonthName?.split(' – ')[0] || '';
   
   return (
     <div style={{
       padding: '12px 14px',
       background: 'rgba(255,255,255,0.02)',
-      borderRadius: '10px',
+      borderRadius: '10px', 
       border: '1px solid rgba(255,255,255,0.06)',
       transition: 'all 0.2s'
     }}>
+      {/* Top Row: Status icon, Info, Status badge */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+        {/* Status Icon */}
         <div style={{
           width: '36px', height: '36px', borderRadius: '8px',
-          background: style.bg, border: '1px solid ' + style.border,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '18px', flexShrink: 0
+          background: statusStyle.bg, 
+          border: `1px solid ${statusStyle.border}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', 
+          fontSize: '18px',
+          flexShrink: 0
         }}>
-          {style.icon}
+          {statusStyle.icon}
         </div>
         
+        {/* Info */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: '14px', fontWeight: '600', margin: 0, color: '#fff' }}>
-            {shipment.influencerName}
+            {shipment.influencerName || 'Nepoznat influencer'}
           </p>
           <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', margin: '2px 0 0' }}>
-            {client && <span>🏢 {client}</span>}
-            {shipment.packageContent && <span style={{ marginLeft: client ? '8px' : 0 }}>📦 {shipment.packageContent}</span>}
+            {clientName && <span>🏢 {clientName}</span>}
+            {shipment.packageContent && <span style={{ marginLeft: clientName ? '8px' : 0 }}>📦 {shipment.packageContent}</span>}
           </p>
           {shipment.trackingNumber && (
             <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', margin: '2px 0 0', fontFamily: 'monospace' }}>
@@ -745,57 +813,119 @@ const ShipmentCard = ({ shipment, onUpdateStatus, onDelete }) => {
           )}
         </div>
         
+        {/* Status Badge */}
         <div style={{
-          padding: '5px 10px', borderRadius: '6px',
-          background: style.bg, border: '1px solid ' + style.border,
-          color: style.color, fontSize: '11px', fontWeight: '600'
+          padding: '5px 10px',
+          borderRadius: '6px',
+          background: statusStyle.bg,
+          border: `1px solid ${statusStyle.border}`,
+          color: statusStyle.color,
+          fontSize: '11px',
+          fontWeight: '600',
+          whiteSpace: 'nowrap'
         }}>
           {shipment.status}
         </div>
       </div>
       
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-        {canBack && (
-          <button onClick={() => onUpdateStatus(shipment.id, flow[idx - 1])} style={{
-            padding: '6px 12px', borderRadius: '6px',
-            background: 'rgba(249, 115, 22, 0.12)', border: '1px solid rgba(249, 115, 22, 0.25)',
-            color: '#f97316', fontSize: '11px', fontWeight: '600', cursor: 'pointer'
-          }}>
-            ← {flow[idx - 1]}
+      {/* Bottom Row: Action Buttons */}
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '8px',
+        paddingTop: '10px',
+        borderTop: '1px solid rgba(255,255,255,0.05)'
+      }}>
+        {/* Back Button */}
+        {canGoBack && (
+          <button
+            onClick={() => onUpdateStatus(shipment.id, prevStatus)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '6px',
+              background: 'rgba(249, 115, 22, 0.12)',
+              border: '1px solid rgba(249, 115, 22, 0.25)',
+              color: '#f97316',
+              fontSize: '11px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            ← {prevStatus}
           </button>
         )}
         
-        {canForward && (
-          <button onClick={() => onUpdateStatus(shipment.id, flow[idx + 1])} style={{
-            padding: '6px 12px', borderRadius: '6px',
-            background: 'rgba(34, 197, 94, 0.12)', border: '1px solid rgba(34, 197, 94, 0.25)',
-            color: '#22c55e', fontSize: '11px', fontWeight: '600', cursor: 'pointer'
-          }}>
-            {flow[idx + 1]} →
+        {/* Forward Button */}
+        {canGoForward && (
+          <button
+            onClick={() => onUpdateStatus(shipment.id, nextStatus)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '6px',
+              background: 'rgba(34, 197, 94, 0.12)',
+              border: '1px solid rgba(34, 197, 94, 0.25)',
+              color: '#22c55e',
+              fontSize: '11px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            {nextStatus} →
           </button>
         )}
         
+        {/* Delete Button - only show for delivered */}
         {shipment.status === 'Dostavljeno' && (
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            {showConfirm ? (
+            {showConfirmDelete ? (
               <>
-                <button onClick={() => { onDelete(shipment.id); setShowConfirm(false); }} style={{
-                  padding: '5px 10px', borderRadius: '5px',
-                  background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)',
-                  color: '#ef4444', fontSize: '10px', fontWeight: '600', cursor: 'pointer'
-                }}>Da</button>
-                <button onClick={() => setShowConfirm(false)} style={{
-                  padding: '5px 10px', borderRadius: '5px',
-                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                  color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', cursor: 'pointer'
-                }}>Ne</button>
+                <button
+                  onClick={() => onDelete && onDelete(shipment.id)}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: '5px',
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    color: '#ef4444',
+                    fontSize: '10px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ✓ Da
+                </button>
+                <button
+                  onClick={() => setShowConfirmDelete(false)}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: '5px',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: 'rgba(255,255,255,0.5)',
+                    fontSize: '10px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ✗ Ne
+                </button>
               </>
             ) : (
-              <button onClick={() => setShowConfirm(true)} style={{
-                padding: '5px 10px', borderRadius: '5px',
-                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-                color: 'rgba(255,255,255,0.4)', fontSize: '10px', cursor: 'pointer'
-              }}>
+              <button
+                onClick={() => setShowConfirmDelete(true)}
+                style={{
+                  padding: '5px 10px',
+                  borderRadius: '5px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: 'rgba(255,255,255,0.4)',
+                  fontSize: '10px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
                 🗑️
               </button>
             )}
@@ -806,6 +936,7 @@ const ShipmentCard = ({ shipment, onUpdateStatus, onDelete }) => {
   );
 };
 
+// Add Package Modal
 const AddPackageModal = ({ isOpen, onClose, onSubmit, campaigns = [] }) => {
   const [selectedCampaign, setSelectedCampaign] = useState('');
   const [selectedInfluencer, setSelectedInfluencer] = useState('');
@@ -825,8 +956,8 @@ const AddPackageModal = ({ isOpen, onClose, onSubmit, campaigns = [] }) => {
     await onSubmit({
       contractMonthId: selectedCampaign,
       influencerId: selectedInfluencer,
-      items: items,
-      courier: courier
+      items,
+      courier
     });
     setSubmitting(false);
     
@@ -836,7 +967,7 @@ const AddPackageModal = ({ isOpen, onClose, onSubmit, campaigns = [] }) => {
   };
   
   const campaignInfluencers = selectedCampaign 
-    ? (campaigns.find(function(c) { return c.id === selectedCampaign; }) || {}).influencers || []
+    ? (campaigns.find(c => c.id === selectedCampaign)?.influencers || [])
     : [];
   
   return (
@@ -857,7 +988,7 @@ const AddPackageModal = ({ isOpen, onClose, onSubmit, campaigns = [] }) => {
           <select value={selectedCampaign} onChange={(e) => { setSelectedCampaign(e.target.value); setSelectedInfluencer(''); }}
             style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '14px', outline: 'none' }}>
             <option value="">Izaberi kampanju...</option>
-            {campaigns.map(function(c) { return <option key={c.id} value={c.id}>{c.month}</option>; })}
+            {campaigns.map(c => <option key={c.id} value={c.id}>{c.month}</option>)}
           </select>
         </div>
         
@@ -866,7 +997,7 @@ const AddPackageModal = ({ isOpen, onClose, onSubmit, campaigns = [] }) => {
           <select value={selectedInfluencer} onChange={(e) => setSelectedInfluencer(e.target.value)} disabled={!selectedCampaign}
             style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '14px', outline: 'none', opacity: selectedCampaign ? 1 : 0.5 }}>
             <option value="">Izaberi influensera...</option>
-            {campaignInfluencers.map(function(inf) { return <option key={inf.id} value={inf.id}>{inf.name}</option>; })}
+            {campaignInfluencers.map(inf => <option key={inf.id} value={inf.id}>{inf.name}</option>)}
           </select>
         </div>
         
@@ -876,7 +1007,7 @@ const AddPackageModal = ({ isOpen, onClose, onSubmit, campaigns = [] }) => {
             style={{ width: '100%', padding: '12px', borderRadius: '10px', minHeight: '80px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '14px', outline: 'none', resize: 'vertical' }} />
         </div>
         
-        <div style={{ marginBottom: '16px' }}>
+        <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '6px', fontWeight: '600' }}>KURIR</label>
           <select value={courier} onChange={(e) => setCourier(e.target.value)}
             style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '14px', outline: 'none' }}>
@@ -901,6 +1032,7 @@ const AddPackageModal = ({ isOpen, onClose, onSubmit, campaigns = [] }) => {
   );
 };
 
+// Section Header
 const SectionHeader = ({ icon, title, count }) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
     <span style={{ fontSize: '18px' }}>{icon}</span>
@@ -938,7 +1070,7 @@ export default function CoordinatorDashboard() {
     if (!slug) return;
     const fetchData = async () => {
       try {
-        const res = await fetch('/api/coordinator/' + slug);
+        const res = await fetch(`/api/coordinator/${slug}`);
         if (!res.ok) throw new Error('Failed to fetch');
         const json = await res.json();
         setData(json);
@@ -979,7 +1111,10 @@ export default function CoordinatorDashboard() {
       const res = await fetch('/api/shipments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(Object.assign({}, packageData, { coordinatorId: data && data.user ? data.user.id : null }))
+        body: JSON.stringify({
+          ...packageData,
+          coordinatorId: data?.user?.id
+        })
       });
       
       if (res.ok) {
@@ -988,7 +1123,7 @@ export default function CoordinatorDashboard() {
         fetchShipments();
       } else {
         const err = await res.json();
-        alert('❌ Greška: ' + (err.error || 'Neuspešno kreiranje paketa'));
+        alert(`❌ Greška: ${err.error || 'Neuspešno kreiranje paketa'}`);
       }
     } catch (err) {
       console.error('Add package error:', err);
@@ -1001,7 +1136,7 @@ export default function CoordinatorDashboard() {
       const res = await fetch('/api/shipments', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shipmentId: shipmentId, status: newStatus })
+        body: JSON.stringify({ shipmentId, status: newStatus })
       });
       
       if (res.ok) {
@@ -1019,7 +1154,7 @@ export default function CoordinatorDashboard() {
       const res = await fetch('/api/shipments', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shipmentId: shipmentId })
+        body: JSON.stringify({ shipmentId })
       });
       
       if (res.ok) {
@@ -1033,61 +1168,61 @@ export default function CoordinatorDashboard() {
   };
 
   const filteredCampaigns = useMemo(() => {
-    if (!data || !data.months) return [];
-    var filtered = data.months.slice();
+    if (!data?.months) return [];
+    let filtered = [...data.months];
     
-    var now = new Date();
-    var thisMonth = now.getMonth();
-    var thisYear = now.getFullYear();
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
     
     if (dateFilter === 'active') {
-      filtered = filtered.filter(function(c) {
+      filtered = filtered.filter(c => {
         if (!c.startDate) return false;
-        var start = new Date(c.startDate);
-        var end = c.endDate ? new Date(c.endDate.split('/').reverse().join('-')) : null;
+        const start = new Date(c.startDate);
+        const end = c.endDate ? new Date(c.endDate.split('/').reverse().join('-')) : null;
         return start <= now && (!end || end >= new Date(thisYear, thisMonth, 1));
       });
     } else if (dateFilter === 'thisMonth') {
-      filtered = filtered.filter(function(c) {
+      filtered = filtered.filter(c => {
         if (!c.startDate) return false;
-        var start = new Date(c.startDate);
+        const start = new Date(c.startDate);
         return start.getMonth() === thisMonth && start.getFullYear() === thisYear;
       });
     } else if (dateFilter === 'lastMonth') {
-      var lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
-      var lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
-      filtered = filtered.filter(function(c) {
+      const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
+      const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
+      filtered = filtered.filter(c => {
         if (!c.startDate) return false;
-        var start = new Date(c.startDate);
+        const start = new Date(c.startDate);
         return start.getMonth() === lastMonth && start.getFullYear() === lastMonthYear;
       });
     } else if (dateFilter === 'future') {
-      filtered = filtered.filter(function(c) {
+      filtered = filtered.filter(c => {
         if (!c.startDate) return true;
-        var start = new Date(c.startDate);
+        const start = new Date(c.startDate);
         return start > now;
       });
     }
     
     if (searchQuery) {
-      var q = searchQuery.toLowerCase();
-      filtered = filtered.filter(function(c) { return c.month && c.month.toLowerCase().indexOf(q) !== -1; });
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(c => c.month?.toLowerCase().includes(q));
     }
     
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(function(c) {
-        var s = (c.progressStatus || '').toLowerCase();
-        var rawP = c.percentDelivered || 0;
-        var p = rawP > 10 ? rawP : rawP * 100;
-        if (statusFilter === 'critical') return s.indexOf('dead') !== -1 || s.indexOf('critical') !== -1;
-        if (statusFilter === 'behind') return s.indexOf('red') !== -1 || s.indexOf('behind') !== -1;
-        if (statusFilter === 'ontrack') return s.indexOf('yellow') !== -1;
-        if (statusFilter === 'ahead') return s.indexOf('green') !== -1 || p >= 100;
+      filtered = filtered.filter(c => {
+        const s = c.progressStatus?.toLowerCase() || '';
+        const rawP = c.percentDelivered || 0;
+        const p = rawP > 10 ? rawP : rawP * 100;
+        if (statusFilter === 'critical') return s.includes('dead') || s.includes('critical');
+        if (statusFilter === 'behind') return s.includes('red') || s.includes('behind');
+        if (statusFilter === 'ontrack') return s.includes('yellow');
+        if (statusFilter === 'ahead') return s.includes('green') || p >= 100;
         return true;
       });
     }
     
-    filtered.sort(function(a, b) {
+    filtered.sort((a, b) => {
       if (sortBy === 'progress') return (a.percentDelivered || 0) - (b.percentDelivered || 0);
       if (sortBy === 'progressDesc') return (b.percentDelivered || 0) - (a.percentDelivered || 0);
       if (sortBy === 'views') return (b.totalViews || 0) - (a.totalViews || 0);
@@ -1097,7 +1232,7 @@ export default function CoordinatorDashboard() {
     });
     
     return filtered;
-  }, [data, searchQuery, statusFilter, dateFilter, sortBy]);
+  }, [data?.months, searchQuery, statusFilter, dateFilter, sortBy]);
 
   if (loading) {
     return (
@@ -1124,9 +1259,94 @@ export default function CoordinatorDashboard() {
       </div>
     );
   }
->
+
+  return (
+    <>
+      <Head>
+        <title>{data.user?.name} | VOICE Dashboard</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </Head>
+      <GlobalStyles />
+
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f0f1a, #1a1a2e, #16213e)', color: '#fff', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+        <main style={{ maxWidth: '1600px', margin: '0 auto', padding: '28px' }}>
+          
+          <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
+            <div>
+              <h1 style={{ fontSize: '32px', fontWeight: '800', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                👋 {data.user?.name}
+              </h1>
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+                {data.user?.role === 'HOD' ? '🎯 HOD • Vidiš sve kampanje' : '📊 Coordinator'}
+              </p>
+            </div>
+            <LiveIndicator />
+          </header>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px', marginBottom: '28px' }}>
+            <FlipStatCard icon="📊" label="Aktivne kampanje" value={data.summary?.activeMonths || 0} gradient="purple" size="large"
+                          items={filteredCampaigns.slice(0, 10).map(c => ({ ...c, name: c.month, views: c.totalViews, link: '#' }))} />
+            <FlipStatCard icon="✋" label="Nove prijave" value={data.summary?.pendingApplications || 0}
+                          subValue={data.summary?.pendingOffers ? `+ ${data.summary.pendingOffers} ponuda` : null} gradient="green"
+                          items={data.offers?.applications || []} />
+            <FlipStatCard icon="✅" label="Prihvatili danas" value={data.summary?.acceptedToday || 0} gradient="blue"
+                          items={data.offers?.acceptedToday || []} />
+            <FlipStatCard icon="❌" label="Odbili danas" value={data.summary?.declinedToday || 0} gradient="red"
+                          items={data.offers?.declinedToday || []} />
+            <FlipStatCard icon="🎬" label="Objavljeno danas" value={data.summary?.publishedToday || 0}
+                          subValue={data.summary?.viewsToday ? `${formatNumber(data.summary.viewsToday)} views` : null} gradient="pink"
+                          items={data.clips?.publishedToday || []} />
+          </div>
+
+          <PackageSection shipments={shipments} summary={shipmentsSummary} 
+                          onAddPackage={() => setShowAddPackageModal(true)} 
+                          onUpdateStatus={handleUpdateStatus}
+                          onDeleteShipment={handleDeleteShipment}
+                          isExpanded={packagesExpanded} onToggle={() => setPackagesExpanded(!packagesExpanded)}
+                          loading={shipmentsLoading} />
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '28px' }}>
+            
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+                <SectionHeader icon="📈" title="Kampanje" count={filteredCampaigns.length} />
+                
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '3px' }}>
+                    {[
+                      { value: 'active', label: '🔥 Aktivne' },
+                      { value: 'thisMonth', label: 'Ovaj mesec' },
+                      { value: 'lastMonth', label: 'Prošli' },
+                      { value: 'future', label: 'Buduće' },
+                      { value: 'all', label: 'Sve' }
+                    ].map(tab => (
+                      <button key={tab.value} onClick={() => setDateFilter(tab.value)}
+                              style={{
+                                padding: '6px 10px', border: 'none', borderRadius: '6px', cursor: 'pointer',
+                                fontSize: '11px', fontWeight: '600', transition: 'all 0.2s',
+                                background: dateFilter === tab.value ? 'rgba(139, 92, 246, 0.4)' : 'transparent',
+                                color: dateFilter === tab.value ? '#fff' : 'rgba(255,255,255,0.5)'
+                              }}>
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Search */}
+                  <input type="text" placeholder="🔍 Pretraži..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                         style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', fontSize: '11px', width: '130px', outline: 'none' }} />
+                  
+                  {/* Status Filter */}
+                  <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+                          style={{ padding: '6px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', fontSize: '11px', cursor: 'pointer', outline: 'none' }}>
+                    <option value="all" style={{ background: '#1a1a2e' }}>Status: Svi</option>
+                    <option value="critical" style={{ background: '#1a1a2e' }}>💀 Kritično</option>
+                    <option value="behind" style={{ background: '#1a1a2e' }}>🔴 Kasni</option>
+                    <option value="ontrack" style={{ background: '#1a1a2e' }}>🟡 Na putu</option>
+                    <option value="ahead" style={{ background: '#1a1a2e' }}>🟢 OK</option>
                   </select>
                   
+                  {/* Sort */}
                   <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
                           style={{ padding: '6px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', fontSize: '11px', cursor: 'pointer', outline: 'none' }}>
                     <option value="progress" style={{ background: '#1a1a2e' }}>⚠️ Treba pažnju</option>
@@ -1138,38 +1358,40 @@ export default function CoordinatorDashboard() {
                 </div>
               </div>
               
-              {filteredCampaigns.slice(0, 30).map(function(campaign) {
-                return (
-                  <CampaignCard key={campaign.id} campaign={campaign}
-                                isExpanded={expandedCampaign === campaign.id}
-                                onToggle={() => setExpandedCampaign(expandedCampaign === campaign.id ? null : campaign.id)}
-                                onInfluencerClick={(inf, camp) => { setSelectedInfluencer(inf); setSelectedCampaign(camp); }} />
-                );
-              })}
+              {/* Campaign Cards */}
+              {filteredCampaigns.slice(0, 30).map((campaign) => (
+                <CampaignCard key={campaign.id} campaign={campaign}
+                              isExpanded={expandedCampaign === campaign.id}
+                              onToggle={() => setExpandedCampaign(expandedCampaign === campaign.id ? null : campaign.id)}
+                              onInfluencerClick={(inf, camp) => { setSelectedInfluencer(inf); setSelectedCampaign(camp); }} />
+              ))}
             </div>
 
+            {/* Right Sidebar */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               
+              {/* Recently Published */}
               <GlassCard>
-                <SectionHeader icon="🎬" title="Nedavno objavljeno" count={data.clips && data.clips.publishedRecent ? data.clips.publishedRecent.length : 0} />
-                {data.clips && data.clips.publishedRecent && data.clips.publishedRecent.length > 0 ? (
+                <SectionHeader icon="🎬" title="Nedavno objavljeno" count={data.clips?.publishedRecent?.length || 0} />
+                {data.clips?.publishedRecent?.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '400px', overflow: 'auto' }}>
-                    {data.clips.publishedRecent.slice(0, 10).map(function(clip, i) {
-                      return <ClipCard key={clip.id || i} clip={clip} />;
-                    })}
+                    {data.clips.publishedRecent.slice(0, 10).map((clip, i) => (
+                      <ClipCard key={clip.id || i} clip={clip} />
+                    ))}
                   </div>
                 ) : (
                   <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', padding: '30px' }}>Nema nedavnih klipova</p>
                 )}
               </GlassCard>
 
+              {/* Waiting for Content */}
               <GlassCard>
-                <SectionHeader icon="⏳" title="Čeka se content" count={data.summary ? data.summary.waitingContent || 0 : 0} />
-                {data.clips && data.clips.waitingContent && data.clips.waitingContent.length > 0 ? (
+                <SectionHeader icon="⏳" title="Čeka se content" count={data.summary?.waitingContent || 0} />
+                {data.clips?.waitingContent?.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflow: 'auto' }}>
-                    {data.clips.waitingContent.slice(0, 8).map(function(clip, i) {
-                      return <ClipCard key={clip.id || i} clip={clip} />;
-                    })}
+                    {data.clips.waitingContent.slice(0, 8).map((clip, i) => (
+                      <ClipCard key={clip.id || i} clip={clip} />
+                    ))}
                   </div>
                 ) : (
                   <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', padding: '30px' }}>✨ Svi klipovi završeni</p>
@@ -1178,6 +1400,7 @@ export default function CoordinatorDashboard() {
             </div>
           </div>
 
+          {/* Footer */}
           <footer style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.06)', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>
             Powered by <strong>VOICE</strong>
             {lastUpdate && <span> • Ažurirano: {lastUpdate.toLocaleTimeString('sr-RS')}</span>}
@@ -1185,105 +1408,23 @@ export default function CoordinatorDashboard() {
         </main>
       </div>
       
+      {/* Influencer Drawer */}
       {selectedInfluencer && (
         <InfluencerDrawer influencer={selectedInfluencer} campaign={selectedCampaign} onClose={() => { setSelectedInfluencer(null); setSelectedCampaign(null); }} />
       )}
       
+      {/* Add Package Modal */}
       <AddPackageModal
         isOpen={showAddPackageModal}
         onClose={() => setShowAddPackageModal(false)}
         onSubmit={handleAddPackage}
-        campaigns={(data && data.months ? data.months : []).filter(function(c) {
+        campaigns={(data?.months || []).filter(c => {
           if (!c.startDate) return false;
-          var now = new Date();
-          var start = new Date(c.startDate);
+          const now = new Date();
+          const start = new Date(c.startDate);
           if (start > now) return false;
           if (c.endDate) {
-            var end = new Date(c.endDate.split('/').reverse().join('-'));
-            if (end < new Date(now.getFullYear(), now.getMonth(), 1)) return false;
-          }
-          return true;
-        })}
-      />
-    </>
-  );
-}
->
-                  </select>
-                  
-                  <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
-                          style={{ padding: '6px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', fontSize: '11px', cursor: 'pointer', outline: 'none' }}>
-                    <option value="progress" style={{ background: '#1a1a2e' }}>⚠️ Treba pažnju</option>
-                    <option value="progressDesc" style={{ background: '#1a1a2e' }}>✅ Najbolje prvo</option>
-                    <option value="views" style={{ background: '#1a1a2e' }}>👁️ Najviše views</option>
-                    <option value="date" style={{ background: '#1a1a2e' }}>📅 Najnovije</option>
-                    <option value="name" style={{ background: '#1a1a2e' }}>🔤 Po imenu</option>
-                  </select>
-                </div>
-              </div>
-              
-              {filteredCampaigns.slice(0, 30).map(function(campaign) {
-                return (
-                  <CampaignCard key={campaign.id} campaign={campaign}
-                                isExpanded={expandedCampaign === campaign.id}
-                                onToggle={() => setExpandedCampaign(expandedCampaign === campaign.id ? null : campaign.id)}
-                                onInfluencerClick={(inf, camp) => { setSelectedInfluencer(inf); setSelectedCampaign(camp); }} />
-                );
-              })}
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              
-              <GlassCard>
-                <SectionHeader icon="🎬" title="Nedavno objavljeno" count={data.clips && data.clips.publishedRecent ? data.clips.publishedRecent.length : 0} />
-                {data.clips && data.clips.publishedRecent && data.clips.publishedRecent.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '400px', overflow: 'auto' }}>
-                    {data.clips.publishedRecent.slice(0, 10).map(function(clip, i) {
-                      return <ClipCard key={clip.id || i} clip={clip} />;
-                    })}
-                  </div>
-                ) : (
-                  <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', padding: '30px' }}>Nema nedavnih klipova</p>
-                )}
-              </GlassCard>
-
-              <GlassCard>
-                <SectionHeader icon="⏳" title="Čeka se content" count={data.summary ? data.summary.waitingContent || 0 : 0} />
-                {data.clips && data.clips.waitingContent && data.clips.waitingContent.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflow: 'auto' }}>
-                    {data.clips.waitingContent.slice(0, 8).map(function(clip, i) {
-                      return <ClipCard key={clip.id || i} clip={clip} />;
-                    })}
-                  </div>
-                ) : (
-                  <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', padding: '30px' }}>✨ Svi klipovi završeni</p>
-                )}
-              </GlassCard>
-            </div>
-          </div>
-
-          <footer style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.06)', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>
-            Powered by <strong>VOICE</strong>
-            {lastUpdate && <span> • Ažurirano: {lastUpdate.toLocaleTimeString('sr-RS')}</span>}
-          </footer>
-        </main>
-      </div>
-      
-      {selectedInfluencer && (
-        <InfluencerDrawer influencer={selectedInfluencer} campaign={selectedCampaign} onClose={() => { setSelectedInfluencer(null); setSelectedCampaign(null); }} />
-      )}
-      
-      <AddPackageModal
-        isOpen={showAddPackageModal}
-        onClose={() => setShowAddPackageModal(false)}
-        onSubmit={handleAddPackage}
-        campaigns={(data && data.months ? data.months : []).filter(function(c) {
-          if (!c.startDate) return false;
-          var now = new Date();
-          var start = new Date(c.startDate);
-          if (start > now) return false;
-          if (c.endDate) {
-            var end = new Date(c.endDate.split('/').reverse().join('-'));
+            const end = new Date(c.endDate.split('/').reverse().join('-'));
             if (end < new Date(now.getFullYear(), now.getMonth(), 1)) return false;
           }
           return true;
