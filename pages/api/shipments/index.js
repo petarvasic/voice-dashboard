@@ -1,5 +1,5 @@
 // pages/api/shipments/index.js
-// API for Shipments - GET all, POST new, PATCH update status
+// API for Shipments - GET all, POST new, PATCH update status, DELETE
 import Airtable from 'airtable';
 
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY })
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
       
       const shipments = records.map(record => ({
         id: record.id,
-        name: record.fields['Name'] || '',
+        name: record.fields['Shipment Name'] || record.fields['Name'] || '',
         influencerId: record.fields['Influencer']?.[0] || null,
         influencerName: record.fields['Influencer Name'] || record.fields['Influencer (from Influencer)']?.[0] || '',
         contractMonthId: record.fields['Contract Month']?.[0] || null,
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
         coordinatorId: record.fields['Coordinator']?.[0] || null,
         coordinatorName: record.fields['Coordinator Name'] || record.fields['Name (from Coordinator)']?.[0] || '',
         status: record.fields['Status'] || 'Čeka slanje',
-        items: record.fields['Items'] || '',
+        items: record.fields['Items'] || [],
         trackingNumber: record.fields['Tracking Number'] || '',
         courier: record.fields['Courier'] || '',
         sentDate: record.fields['Sent Date'] || null,
@@ -89,10 +89,15 @@ export default async function handler(req, res) {
     }
     
     try {
-      // Build fields object - only include non-empty values
+      // Build fields object
       const fields = {
         'Status': 'Čeka slanje'
       };
+      
+      // Shipment Name is REQUIRED (Primary Key) - generate unique name
+      const timestamp = Date.now();
+      const shortId = timestamp.toString(36).toUpperCase();
+      fields['Shipment Name'] = `SHP-${shortId}`;
       
       // Link fields must be arrays of record IDs
       if (influencerId) fields['Influencer'] = [influencerId];
@@ -102,7 +107,9 @@ export default async function handler(req, res) {
       // Items is a multi-select field with ONLY these valid options:
       const validItems = ['2x majica M', '1x parfem', '1x kozmetika set', '3x sample proizvoda'];
       
-      // Items field - only use if it matches valid options, otherwise put in notes
+      // Process items - valid options go to Items field, custom text goes to Notes
+      let notesText = notes || '';
+      
       if (items) {
         let itemsArray = [];
         if (typeof items === 'string') {
@@ -111,31 +118,29 @@ export default async function handler(req, res) {
           itemsArray = items;
         }
         
-        // Filter to only valid options
+        // Filter to only valid options for Items field
         const validItemsToSave = itemsArray.filter(item => validItems.includes(item));
         if (validItemsToSave.length > 0) {
           fields['Items'] = validItemsToSave;
         }
         
-        // If user entered custom text (not matching valid options), add to notes
+        // Custom text (not matching valid options) goes to Notes
         const customItems = itemsArray.filter(item => !validItems.includes(item));
         if (customItems.length > 0) {
-          const customItemsText = 'Sadržaj paketa: ' + customItems.join(', ');
-          fields['Notes'] = notes ? `${notes}\n${customItemsText}` : customItemsText;
-        } else if (notes) {
-          fields['Notes'] = notes;
+          const customItemsText = 'Sadržaj: ' + customItems.join(', ');
+          notesText = notesText ? `${notesText}\n${customItemsText}` : customItemsText;
         }
-      } else if (notes) {
-        fields['Notes'] = notes;
       }
       
-      // Courier is a single-select field
-      if (courier) fields['Courier'] = courier;
+      if (notesText) {
+        fields['Notes'] = notesText;
+      }
       
-      // Shipment Name is REQUIRED (Primary Key) - generate unique name
-      const timestamp = Date.now();
-      const shortId = timestamp.toString(36).toUpperCase();
-      fields['Shipment Name'] = `SHP-${shortId}`;
+      // Courier is a single-select field - must match exactly
+      const validCouriers = ['Pošta', 'Preuzimanje u kancelariji', 'Glovo/Wolt'];
+      if (courier && validCouriers.includes(courier)) {
+        fields['Courier'] = courier;
+      }
       
       console.log('Creating shipment with fields:', JSON.stringify(fields));
       
@@ -153,7 +158,6 @@ export default async function handler(req, res) {
     } catch (error) {
       console.error('Shipments POST error:', error);
       console.error('Error details:', error.message);
-      console.error('Error statusCode:', error.statusCode);
       return res.status(500).json({ 
         error: 'Failed to create shipment', 
         details: error.message,
