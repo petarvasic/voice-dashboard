@@ -104,6 +104,10 @@ export default async function handler(req, res) {
       if (courier) fields['Courier'] = courier;
       if (notes) fields['Notes'] = notes;
       
+      // Generate a name for the shipment
+      const timestamp = new Date().toISOString().slice(0, 10);
+      fields['Shipment Name'] = `Shipment ${timestamp}`;
+      
       console.log('Creating shipment with fields:', JSON.stringify(fields));
       
       const newRecord = await base('Shipments').create([{ fields }]);
@@ -119,7 +123,13 @@ export default async function handler(req, res) {
       
     } catch (error) {
       console.error('Shipments POST error:', error);
-      return res.status(500).json({ error: 'Failed to create shipment', details: error.message });
+      console.error('Error details:', error.message);
+      console.error('Error statusCode:', error.statusCode);
+      return res.status(500).json({ 
+        error: 'Failed to create shipment', 
+        details: error.message,
+        airtableError: error.error || null
+      });
     }
   }
   
