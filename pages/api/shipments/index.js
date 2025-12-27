@@ -1,5 +1,6 @@
 // pages/api/shipments/index.js
-// API for Shipments - v5 with better error handling
+// API for Shipments - v6 with coordinator filtering
+// HOD sees all, coordinators see only their clients' shipments
 import Airtable from 'airtable';
 
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY })
@@ -17,6 +18,8 @@ export default async function handler(req, res) {
   // ============ GET ============
   if (req.method === 'GET') {
     try {
+      const { coordinatorId, role } = req.query;
+      
       // Get influencer names
       const influencerMap = {};
       try {
@@ -24,20 +27,33 @@ export default async function handler(req, res) {
         recs.forEach(r => { influencerMap[r.id] = r.fields['Influencer Name'] || 'Unknown'; });
       } catch (e) { console.log('Influencers fetch error:', e.message); }
 
-      // Get campaign names
+      // Get campaign/contract month info including coordinator
       const campaignMap = {};
+      const campaignCoordinatorMap = {}; // Maps campaign ID to coordinator ID
       try {
-        const recs = await base('Contract Months').select({ fields: ['Month'], maxRecords: 1000 }).all();
-        recs.forEach(r => { campaignMap[r.id] = r.fields['Month'] || 'Unknown'; });
+        const recs = await base('Contract Months').select({ 
+          fields: ['Month', 'Coordinator'],
+          maxRecords: 1000 
+        }).all();
+        recs.forEach(r => { 
+          campaignMap[r.id] = r.fields['Month'] || 'Unknown';
+          // Store coordinator ID for this campaign
+          if (r.fields['Coordinator'] && r.fields['Coordinator'][0]) {
+            campaignCoordinatorMap[r.id] = r.fields['Coordinator'][0];
+          }
+        });
       } catch (e) { console.log('Campaigns fetch error:', e.message); }
 
-      // Get shipments
+      // Get all shipments
       const records = await base('Shipments').select({ maxRecords: 500 }).all();
       
-      const shipments = records.map(record => {
+      let shipments = records.map(record => {
         const f = record.fields;
         const influencerId = f['Influencer']?.[0] || null;
         const contractMonthId = f['Contract Month']?.[0] || null;
+        
+        // Get the coordinator ID from the campaign
+        const shipmentCoordinatorId = contractMonthId ? campaignCoordinatorMap[contractMonthId] : null;
         
         return {
           id: record.id,
@@ -46,6 +62,7 @@ export default async function handler(req, res) {
           influencerName: influencerId ? (influencerMap[influencerId] || 'Nepoznat') : 'Nepoznat',
           contractMonthId,
           contractMonthName: contractMonthId ? (campaignMap[contractMonthId] || 'Bez kampanje') : 'Bez kampanje',
+          coordinatorId: shipmentCoordinatorId, // Coordinator who owns this campaign
           status: f['Status'] || 'Čeka slanje',
           packageContent: f['Notes'] || '',
           trackingNumber: f['Tracking Number'] || '',
@@ -55,6 +72,13 @@ export default async function handler(req, res) {
           createdAt: f['Created'] || null
         };
       });
+      
+      // Filter by coordinator if not HOD
+      // HOD (role === 'HOD') sees everything
+      // Regular coordinators see only shipments for their campaigns
+      if (coordinatorId && role !== 'HOD') {
+        shipments = shipments.filter(s => s.coordinatorId === coordinatorId);
+      }
       
       const summary = {
         total: shipments.length,
@@ -72,16 +96,13 @@ export default async function handler(req, res) {
   
   // ============ POST ============
   if (req.method === 'POST') {
-    const { influencerId, contractMonthId, coordinatorId, items, courier, notes } = req.body;
-    
-    console.log('POST request body:', JSON.stringify(req.body, null, 2));
+    const { influencerId, contractMonthId, items, courier, notes } = req.body;
     
     if (!influencerId || !contractMonthId) {
-      return res.status(400).json({ error: 'Missing required fields: influencerId and contractMonthId are required' });
+      return res.status(400).json({ error: 'Missing required fields' });
     }
     
     try {
-      // Build fields object - ONLY include fields that exist in Airtable
       const fields = {
         'Status': 'Čeka slanje',
         'Shipment Name': `SHP-${Date.now().toString(36).toUpperCase()}`,
@@ -89,33 +110,21 @@ export default async function handler(req, res) {
         'Contract Month': [contractMonthId]
       };
       
-      // Only add Coordinator if it exists and is provided
-      // REMOVED: Some Airtable setups don't have this field
-      // if (coordinatorId) fields['Coordinator'] = [coordinatorId];
-      
-      // Package content goes to Notes field
+      // Package content goes to Notes
       let notesContent = '';
-      if (items && items.trim()) {
-        notesContent = items.trim();
-      }
+      if (items && items.trim()) notesContent = items.trim();
       if (notes && notes.trim()) {
         notesContent = notesContent ? `${notesContent}\n${notes.trim()}` : notes.trim();
       }
-      if (notesContent) {
-        fields['Notes'] = notesContent;
-      }
+      if (notesContent) fields['Notes'] = notesContent;
       
-      // Courier - only if valid
+      // Courier
       const validCouriers = ['Pošta', 'Preuzimanje u kancelariji', 'Glovo/Wolt', 'Kurir'];
       if (courier && validCouriers.includes(courier)) {
         fields['Courier'] = courier;
       }
       
-      console.log('Creating shipment with fields:', JSON.stringify(fields, null, 2));
-      
       const newRecord = await base('Shipments').create([{ fields }]);
-      
-      console.log('Shipment created successfully:', newRecord[0].id);
       
       return res.status(201).json({
         success: true,
@@ -124,15 +133,7 @@ export default async function handler(req, res) {
       });
     } catch (error) {
       console.error('POST error:', error);
-      console.error('Error type:', error.error);
-      console.error('Error message:', error.message);
-      
-      // Return more detailed error
-      return res.status(500).json({ 
-        error: 'Failed to create', 
-        details: error.message,
-        airtableError: error.error || null
-      });
+      return res.status(500).json({ error: 'Failed to create', details: error.message });
     }
   }
   
