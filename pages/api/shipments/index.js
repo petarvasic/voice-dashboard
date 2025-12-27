@@ -99,14 +99,23 @@ export default async function handler(req, res) {
       if (contractMonthId) fields['Contract Month'] = [contractMonthId];
       if (coordinatorId) fields['Coordinator'] = [coordinatorId];
       
-      // Text fields
-      if (items) fields['Items'] = items;
+      // Items is a multi-select field - if provided as string, split by comma
+      if (items) {
+        // If items is a string like "2x majica M, 1x parfem", split into array
+        if (typeof items === 'string') {
+          fields['Items'] = items.split(',').map(item => item.trim()).filter(Boolean);
+        } else if (Array.isArray(items)) {
+          fields['Items'] = items;
+        }
+      }
+      
+      // Courier is a single-select field
       if (courier) fields['Courier'] = courier;
+      
+      // Notes is a text field
       if (notes) fields['Notes'] = notes;
       
-      // Generate a name for the shipment
-      const timestamp = new Date().toISOString().slice(0, 10);
-      fields['Shipment Name'] = `Shipment ${timestamp}`;
+      // Don't set Shipment Name - let Airtable auto-generate it or use formula
       
       console.log('Creating shipment with fields:', JSON.stringify(fields));
       
