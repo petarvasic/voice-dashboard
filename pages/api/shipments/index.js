@@ -1,5 +1,6 @@
 // pages/api/shipments/index.js
 // API for Shipments - GET all, POST new, PATCH update status, DELETE
+// Fixed to fetch influencer and campaign names from linked tables
 import Airtable from 'airtable';
 
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY })
@@ -15,75 +16,75 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // ============ GET - Fetch shipments ============
+  // ============ GET - Fetch shipments with names ============
   if (req.method === 'GET') {
-    const { coordinatorId, contractMonthId, status } = req.query;
-    
     try {
-      let filterFormula = '';
-      
-      if (coordinatorId) {
-        filterFormula = `FIND("${coordinatorId}", ARRAYJOIN({Coordinator}))`;
-      } else if (contractMonthId) {
-        filterFormula = `FIND("${contractMonthId}", ARRAYJOIN({Contract Month}))`;
-      } else if (status) {
-        filterFormula = `{Status} = "${status}"`;
+      // 1. First, get all influencers for name lookup
+      const influencerMap = {};
+      try {
+        const influencerRecords = await base('Influencers')
+          .select({ fields: ['Influencer Name'], maxRecords: 2000 })
+          .all();
+        influencerRecords.forEach(rec => {
+          influencerMap[rec.id] = rec.fields['Influencer Name'] || 'Unknown';
+        });
+      } catch (e) {
+        console.log('Could not fetch influencers:', e.message);
       }
-      
-      const selectOptions = {
-        maxRecords: 500
-      };
-      
-      if (filterFormula) {
-        selectOptions.filterByFormula = filterFormula;
+
+      // 2. Get all contract months for name lookup
+      const contractMonthMap = {};
+      try {
+        const monthRecords = await base('Contract Months')
+          .select({ fields: ['Month'], maxRecords: 1000 })
+          .all();
+        monthRecords.forEach(rec => {
+          contractMonthMap[rec.id] = rec.fields['Month'] || 'Unknown Campaign';
+        });
+      } catch (e) {
+        console.log('Could not fetch contract months:', e.message);
       }
-      
+
+      // 3. Get all coordinators for name lookup
+      const coordinatorMap = {};
+      try {
+        const coordRecords = await base('Users')
+          .select({ fields: ['Name'], maxRecords: 100 })
+          .all();
+        coordRecords.forEach(rec => {
+          coordinatorMap[rec.id] = rec.fields['Name'] || 'Unknown';
+        });
+      } catch (e) {
+        console.log('Could not fetch coordinators:', e.message);
+      }
+
+      // 4. Now get shipments
       const records = await base('Shipments')
-        .select(selectOptions)
+        .select({ maxRecords: 500 })
         .all();
-      
-      // Debug: log first record to see field names
-      if (records.length > 0) {
-        console.log('Shipment fields available:', Object.keys(records[0].fields));
-        console.log('First record fields:', JSON.stringify(records[0].fields, null, 2));
-      }
       
       const shipments = records.map(record => {
         const fields = record.fields;
         
-        // Try multiple possible field names for influencer name
-        const influencerName = 
-          fields['Influencer Name'] ||                           // Direct field
-          fields['Name (from Influencer)']?.[0] ||              // Lookup array
-          fields['Influencer Name (from Influencer)']?.[0] ||   // Another lookup format
-          fields['Influencer (from Influencer)']?.[0] ||        // Yet another format
-          '';
+        // Get IDs from link fields
+        const influencerId = fields['Influencer']?.[0] || null;
+        const contractMonthId = fields['Contract Month']?.[0] || null;
+        const coordinatorId = fields['Coordinator']?.[0] || null;
         
-        // Try multiple possible field names for contract month / campaign name
-        const contractMonthName = 
-          fields['Contract Month Name'] ||                       // Direct field
-          fields['Month (from Contract Month)']?.[0] ||         // Lookup array
-          fields['Name (from Contract Month)']?.[0] ||          // Another lookup
-          fields['Month']?.[0] ||                               // Simple lookup
-          fields['Contract Month Name (from Contract Month)']?.[0] ||
-          '';
-        
-        // Try to get coordinator name
-        const coordinatorName = 
-          fields['Coordinator Name'] ||
-          fields['Name (from Coordinator)']?.[0] ||
-          fields['Coordinator (from Coordinator)']?.[0] ||
-          '';
+        // Look up names from our maps
+        const influencerName = influencerId ? influencerMap[influencerId] : '';
+        const contractMonthName = contractMonthId ? contractMonthMap[contractMonthId] : '';
+        const coordinatorName = coordinatorId ? coordinatorMap[coordinatorId] : '';
         
         return {
           id: record.id,
-          name: fields['Shipment Name'] || fields['Name'] || '',
-          influencerId: fields['Influencer']?.[0] || null,
-          influencerName: influencerName,
-          contractMonthId: fields['Contract Month']?.[0] || null,
-          contractMonthName: contractMonthName,
-          coordinatorId: fields['Coordinator']?.[0] || null,
-          coordinatorName: coordinatorName,
+          name: fields['Shipment Name'] || '',
+          influencerId,
+          influencerName: influencerName || 'Nepoznat influencer',
+          contractMonthId,
+          contractMonthName: contractMonthName || 'Bez kampanje',
+          coordinatorId,
+          coordinatorName: coordinatorName || '',
           status: fields['Status'] || 'Čeka slanje',
           items: fields['Items'] || [],
           trackingNumber: fields['Tracking Number'] || '',
@@ -123,80 +124,61 @@ export default async function handler(req, res) {
     }
     
     try {
-      // Build fields object
       const fields = {
         'Status': 'Čeka slanje'
       };
       
-      // Shipment Name is REQUIRED (Primary Key) - generate unique name
+      // Generate unique shipment name
       const timestamp = Date.now();
       const shortId = timestamp.toString(36).toUpperCase();
       fields['Shipment Name'] = `SHP-${shortId}`;
       
-      // Link fields must be arrays of record IDs
+      // Link fields
       if (influencerId) fields['Influencer'] = [influencerId];
       if (contractMonthId) fields['Contract Month'] = [contractMonthId];
       if (coordinatorId) fields['Coordinator'] = [coordinatorId];
       
-      // Items is a multi-select field with ONLY these valid options:
+      // Items - valid options only
       const validItems = ['2x majica M', '1x parfem', '1x kozmetika set', '3x sample proizvoda'];
-      
-      // Process items - valid options go to Items field, custom text goes to Notes
       let notesText = notes || '';
       
       if (items) {
-        let itemsArray = [];
-        if (typeof items === 'string') {
-          itemsArray = items.split(',').map(item => item.trim()).filter(Boolean);
-        } else if (Array.isArray(items)) {
-          itemsArray = items;
-        }
+        let itemsArray = typeof items === 'string' 
+          ? items.split(',').map(i => i.trim()).filter(Boolean)
+          : Array.isArray(items) ? items : [];
         
-        // Filter to only valid options for Items field
         const validItemsToSave = itemsArray.filter(item => validItems.includes(item));
         if (validItemsToSave.length > 0) {
           fields['Items'] = validItemsToSave;
         }
         
-        // Custom text (not matching valid options) goes to Notes
+        // Custom items go to notes
         const customItems = itemsArray.filter(item => !validItems.includes(item));
         if (customItems.length > 0) {
-          const customItemsText = 'Sadržaj: ' + customItems.join(', ');
-          notesText = notesText ? `${notesText}\n${customItemsText}` : customItemsText;
+          const customText = 'Sadržaj: ' + customItems.join(', ');
+          notesText = notesText ? `${notesText}\n${customText}` : customText;
         }
       }
       
-      if (notesText) {
-        fields['Notes'] = notesText;
-      }
+      if (notesText) fields['Notes'] = notesText;
       
-      // Courier is a single-select field - must match exactly
+      // Courier
       const validCouriers = ['Pošta', 'Preuzimanje u kancelariji', 'Glovo/Wolt'];
       if (courier && validCouriers.includes(courier)) {
         fields['Courier'] = courier;
       }
-      
-      console.log('Creating shipment with fields:', JSON.stringify(fields));
       
       const newRecord = await base('Shipments').create([{ fields }]);
       
       return res.status(201).json({
         success: true,
         message: 'Paket je kreiran!',
-        shipment: {
-          id: newRecord[0].id,
-          status: 'Čeka slanje'
-        }
+        shipment: { id: newRecord[0].id, status: 'Čeka slanje' }
       });
       
     } catch (error) {
       console.error('Shipments POST error:', error);
-      console.error('Error details:', error.message);
-      return res.status(500).json({ 
-        error: 'Failed to create shipment', 
-        details: error.message,
-        airtableError: error.error || null
-      });
+      return res.status(500).json({ error: 'Failed to create shipment', details: error.message });
     }
   }
   
@@ -213,8 +195,6 @@ export default async function handler(req, res) {
       
       if (status) {
         updateFields['Status'] = status;
-        
-        // Auto-set dates based on status
         if (status === 'U dostavi') {
           updateFields['Sent Date'] = new Date().toISOString().split('T')[0];
         } else if (status === 'Dostavljeno') {
@@ -227,24 +207,18 @@ export default async function handler(req, res) {
       if (notes !== undefined) updateFields['Notes'] = notes;
       
       const updatedRecord = await base('Shipments').update([
-        {
-          id: shipmentId,
-          fields: updateFields
-        }
+        { id: shipmentId, fields: updateFields }
       ]);
       
       return res.status(200).json({
         success: true,
-        message: status ? `Status promenjen u "${status}"` : 'Paket ažuriran',
-        shipment: {
-          id: updatedRecord[0].id,
-          status: updatedRecord[0].fields['Status']
-        }
+        message: status ? `Status: ${status}` : 'Ažurirano',
+        shipment: { id: updatedRecord[0].id, status: updatedRecord[0].fields['Status'] }
       });
       
     } catch (error) {
       console.error('Shipments PATCH error:', error);
-      return res.status(500).json({ error: 'Failed to update shipment', details: error.message });
+      return res.status(500).json({ error: 'Failed to update', details: error.message });
     }
   }
   
@@ -258,15 +232,10 @@ export default async function handler(req, res) {
     
     try {
       await base('Shipments').destroy([shipmentId]);
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Paket obrisan'
-      });
-      
+      return res.status(200).json({ success: true, message: 'Obrisano' });
     } catch (error) {
       console.error('Shipments DELETE error:', error);
-      return res.status(500).json({ error: 'Failed to delete shipment', details: error.message });
+      return res.status(500).json({ error: 'Failed to delete', details: error.message });
     }
   }
   
