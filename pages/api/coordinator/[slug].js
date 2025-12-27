@@ -191,7 +191,8 @@ export default async function handler(req, res) {
         clientName: clientName,
         campaignGoal: parseInt(record.fields['Campaign Goal (Views)']) || 0,
         totalViews: parseInt(record.fields['Total Views for a Contract Month']) || 0,
-        percentDelivered: parseFloat(record.fields['%Delivered']) || 0,
+        // Use '%Delivered 2' which is a number (0.54 = 54%), not string. BLANK = null when 0 views.
+        percentDelivered: record.fields['%Delivered 2'] != null ? record.fields['%Delivered 2'] : 0,
         progressStatus: record.fields['Progress Status'] || '',
         startDate: record.fields['Start Date'] || '',
         endDate: record.fields['End Date'] || '',
