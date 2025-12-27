@@ -276,9 +276,10 @@ const StatusBadge = ({ status }) => {
 // Campaign Card
 const CampaignCard = ({ campaign, isExpanded, onToggle, onInfluencerClick }) => {
   const [isHovered, setIsHovered] = useState(false);
-  // percentDelivered might come as decimal (0.54) or already as percent (54)
+  // percentDelivered comes as decimal (e.g., 0.54 for 54%)
+  // If it's > 10, assume it's already a percentage (edge case protection)
   const rawPercent = campaign.percentDelivered || 0;
-  const percent = rawPercent > 1 ? rawPercent : rawPercent * 100;
+  const percent = rawPercent > 10 ? rawPercent : rawPercent * 100;
   
   return (
     <div style={{ marginBottom: '8px' }}>
@@ -1023,7 +1024,7 @@ export default function CoordinatorDashboard() {
       filtered = filtered.filter(c => {
         const s = c.progressStatus?.toLowerCase() || '';
         const rawP = c.percentDelivered || 0;
-        const p = rawP > 1 ? rawP : rawP * 100;
+        const p = rawP > 10 ? rawP : rawP * 100;
         if (statusFilter === 'critical') return s.includes('dead') || s.includes('critical');
         if (statusFilter === 'behind') return s.includes('red') || s.includes('behind');
         if (statusFilter === 'ontrack') return s.includes('yellow');
