@@ -8,7 +8,7 @@ const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY })
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
   if (req.method === 'OPTIONS') {
@@ -207,6 +207,28 @@ export default async function handler(req, res) {
     } catch (error) {
       console.error('Shipments PATCH error:', error);
       return res.status(500).json({ error: 'Failed to update shipment', details: error.message });
+    }
+  }
+  
+  // ============ DELETE - Delete shipment ============
+  if (req.method === 'DELETE') {
+    const { shipmentId } = req.body;
+    
+    if (!shipmentId) {
+      return res.status(400).json({ error: 'Shipment ID is required' });
+    }
+    
+    try {
+      await base('Shipments').destroy([shipmentId]);
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Paket obrisan'
+      });
+      
+    } catch (error) {
+      console.error('Shipments DELETE error:', error);
+      return res.status(500).json({ error: 'Failed to delete shipment', details: error.message });
     }
   }
   
