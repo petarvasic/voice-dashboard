@@ -1,4 +1,5 @@
 // pages/api/client/[clientId].js
+// Fixed: Use '%Delivered 2' (decimal format 0.82) instead of '%Delivered' (82)
 import Airtable from 'airtable';
 
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY })
@@ -40,27 +41,45 @@ export default async function handler(req, res) {
         })
         .all();
 
-      months = contractMonths.map(record => ({
-        id: record.id,
-        month: record.fields['Month'] || '',
-        startDate: record.fields['Start Date'] || '',
-        endDate: record.fields['End Date'] || '',
-        campaignGoal: parseInt(record.fields['Campaign Goal (Views)']) || 0,
-        totalViews: parseInt(record.fields['Total Views for a Contract Month']) || 0,
-        percentDelivered: parseFloat(record.fields['%Delivered']) || 0,
-        progressStatus: record.fields['Progress Status'] || '',
-        meaning: record.fields['Meaning'] || '',
-        contractStatus: record.fields['Contract Status'] || '',
-        totalLikes: parseInt(record.fields['Number of Likes Achieved']) || 0,
-        totalComments: parseInt(record.fields['Number of Comment Achieved']) || 0,
-        totalShares: parseInt(record.fields['Number of Shares Achieved']) || 0,
-        totalSaves: parseInt(record.fields['Number of Saves Achieved']) || 0,
-        publishedClips: parseInt(record.fields['Number of Published Clips']) || 0,
-        daysTotal: parseInt(record.fields['Total Days in Contract Month']) || 30,
-        daysPassed: parseInt(record.fields['Days Passed Today']) || 0,
-        timePercent: parseFloat(record.fields['%Time Passed']) || 0,
-        relatedClips: record.fields['Related Clips'] || []
-      }));
+      months = contractMonths.map(record => {
+        const fields = record.fields;
+        
+        // Use '%Delivered 2' which is decimal (0.82 = 82%)
+        // Fallback to '%Delivered' if '%Delivered 2' doesn't exist
+        let percentDelivered = parseFloat(fields['%Delivered 2']) || 0;
+        
+        // If using old '%Delivered' field, it might be in percentage format (82 instead of 0.82)
+        // Detect and convert: if value > 1, it's already a percentage, divide by 100
+        if (percentDelivered === 0) {
+          percentDelivered = parseFloat(fields['%Delivered']) || 0;
+          // If it looks like a percentage (> 1), convert to decimal
+          if (percentDelivered > 1) {
+            percentDelivered = percentDelivered / 100;
+          }
+        }
+        
+        return {
+          id: record.id,
+          month: fields['Month'] || '',
+          startDate: fields['Start Date'] || '',
+          endDate: fields['End Date'] || '',
+          campaignGoal: parseInt(fields['Campaign Goal (Views)']) || 0,
+          totalViews: parseInt(fields['Total Views for a Contract Month']) || 0,
+          percentDelivered: percentDelivered, // Now always decimal (0.82 for 82%)
+          progressStatus: fields['Progress Status'] || '',
+          meaning: fields['Meaning'] || '',
+          contractStatus: fields['Contract Status'] || '',
+          totalLikes: parseInt(fields['Number of Likes Achieved']) || 0,
+          totalComments: parseInt(fields['Number of Comment Achieved']) || 0,
+          totalShares: parseInt(fields['Number of Shares Achieved']) || 0,
+          totalSaves: parseInt(fields['Number of Saves Achieved']) || 0,
+          publishedClips: parseInt(fields['Number of Published Clips']) || 0,
+          daysTotal: parseInt(fields['Total Days in Contract Month']) || 30,
+          daysPassed: parseInt(fields['Days Passed Today']) || 0,
+          timePercent: parseFloat(fields['%Time Passed']) || 0,
+          relatedClips: fields['Related Clips'] || []
+        };
+      });
     }
 
     // Calculate cumulative totals - using parseInt to avoid floating point issues
@@ -75,7 +94,7 @@ export default async function handler(req, res) {
       monthsCount: months.length
     };
     
-    // Calculate percent delivered safely
+    // Calculate percent delivered safely - result is decimal (0.94 for 94%)
     cumulative.percentDelivered = cumulative.totalGoal > 0 
       ? Math.round((cumulative.totalViews / cumulative.totalGoal) * 10000) / 10000
       : 0;
